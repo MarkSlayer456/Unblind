@@ -3,7 +3,7 @@
 #define UNBLIND_H_
 
 #define MAX_LINES 8196
-#define MAX_CHARS_PER_LINE 256
+#define MAX_CHARS_PER_LINE 255
 
 enum directions{UP, DOWN, LEFT, RIGHT};
 
@@ -14,6 +14,11 @@ int length(char *arr);
 void update_cursor_pos(WINDOW *win);
 void move_cursor(enum directions d, WINDOW *win);
 void delete_line(WINDOW *win, int y);
+void draw(WINDOW *win);
+int str_insert(char *arr, int insert, char c);
+void array_insert(char *a, int x, char c);
+void move_to_left(char *arr, int left);
+char *array_merge(char *arr1, char *arr2);
 
 
 #endif
