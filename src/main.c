@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <signal.h>
 
 
 #include "unblind.h"
@@ -11,7 +12,13 @@ WINDOW *win;
 FILE *f;
 char *file_name;
 
+void handle();
+
 int main(int argc, char *argv[]) {
+	signal(SIGINT, handle);
+	//signal(SIGILL, handle);
+	//signal(SIGUSR2, handle);
+	
 	WINDOW *holder = initscr();
     win = newwin(MAX_LINES, 99, 0, 0);
 	noecho();
@@ -19,6 +26,7 @@ int main(int argc, char *argv[]) {
 	keypad(stdscr, TRUE);
 	//immedok(win, TRUE);
 	scrollok(win, FALSE);
+	raw();
 	//idlok(win, FALSE);
 	//nl();
 	//wsetscrreg(win, MAX_LINES, 0);
@@ -45,3 +53,5 @@ int main(int argc, char *argv[]) {
     endwin();
 	return 0;
 }
+
+void handle() { }

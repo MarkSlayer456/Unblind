@@ -19,6 +19,7 @@ int str_insert(char *arr, int insert, char c);
 void array_insert(char *a, int x, char c);
 void move_to_left(char *arr, int left);
 char *array_merge(char *arr1, char *arr2);
+void shutdown();
 
 
 #endif

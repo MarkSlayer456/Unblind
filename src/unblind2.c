@@ -17,11 +17,12 @@ int scroll_offset = 0;
 
 char contents[MAX_LINES][MAX_CHARS_PER_LINE]; // this is a lot of memory
 
+char message[255] = "";
+
 typedef struct point {
 	int y;
 	int x;
 } point_t;
-
 
 point_t *find_word(char *str) {
 	for(int i = 0; i < MAX_LINES; i++) {
@@ -61,13 +62,19 @@ void draw(WINDOW *win) {
 		for(int j = 0; j <= strlen(contents[i]); j++) {
 			if(contents[i][j] != '\0') {
 				//mvdelch(y, (j+1)); not sure why this was here
-				if(y <= LINES) {
+				// bottom two lines are used for messages and other things
+				if(y <= LINES-2) {
 				    wmove(win, y, j);
 					waddch(win, contents[i][j]);
 				}
+				//TODO
+				//wprintmv(win, message);
 			}			
 		}			
 	}
+	wmove(win, 35, 0);
+	mvprintw(35, 0, message);
+	wrefresh(win);
 	update_cursor_pos(win);
 	//wrefresh(win);
 }
@@ -213,9 +220,13 @@ void manage_input(char *file_name, WINDOW *win) {
     } else if(c == 2) { // down
         d = DOWN;
         move_cursor(d, win);
-    } else if(c == 23) { //ctrl-w
+    } else if(c == 19) { //ctrl-s
         write_contents_to_file(file_name);
+        strcat(message, "Saved ");
+        strcat(message, file_name);
 		//TODO save the file
+	} else if(c == 17) { // ctrl-q 
+		shutdown();
 	} else if(c == 127 || c == 8 || c == 7) { // backspace or delete and bell?
         if(cx <= 0 && cy <= 0) return;
 		if(cx <= 0 && cy > 0) {
@@ -239,7 +250,12 @@ void manage_input(char *file_name, WINDOW *win) {
 			}
 			
 			//new_cy--;
-			//cy--;
+			if(wcy <= 6 && scroll_offset > 0) {
+				wcy++;
+				unblind_scroll_up(win, wcy);
+			}
+			cy--;
+			wcy--;
 		} else {
             move_to_left(contents[cy], --cx);
             update_cursor_pos(win);
@@ -279,10 +295,31 @@ void manage_input(char *file_name, WINDOW *win) {
 			//cy--;
     } else if(c != EOF) {
         if(!iscntrl(c)) {
-        	array_insert(contents[cy], cx, c);
-        	cx++;
+			array_insert(contents[cy], cx, c);
+			cx++;
+			// auto completion for ()'s and such
+        	switch(c) {
+        		case '(':
+        			array_insert(contents[cy], cx, ')');
+        			break;
+        		case '[':
+        			array_insert(contents[cy], cx, ']');
+        			break;
+        		case '{':
+        			array_insert(contents[cy], cx, '}');
+        			break;
+        		case '\'':
+        		case '\"':
+        			array_insert(contents[cy], cx, c);
+	       			break;
+        		case '<':
+        			array_insert(contents[cy], cx, '>');
+        			break;
+        	}
         }
+        strcpy(message, "");
 	}
+	
     update_cursor_pos(win);
 	draw(win);
 }
@@ -344,4 +381,9 @@ int str_insert(char *arr, int insert, char c) {
     }
     if(arr[i]) return 1;
     return 0;
+}
+
+void shutdown() {
+	endwin();
+	exit(0);
 }
