@@ -1,35 +1,39 @@
+
 #include <stdio.h>
 #include <ncurses.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <ctype.h>
 #include <signal.h>
-
+#include <string.h>
 
 #include "unblind.h"
 
-WINDOW *win;
-FILE *f;
-char *file_name;
 
 void handle();
 
 int main(int argc, char *argv[]) {
-	signal(SIGINT, handle);
-	//signal(SIGILL, handle);
-	//signal(SIGUSR2, handle);
+	print_to_log("Program start");
 	
-	WINDOW *holder = initscr();
-    win = newwin(MAX_LINES, 99, 0, 0);
+	FILE *f;
+	char *file_name;
+	WINDOW *win = (WINDOW *) malloc(sizeof(WINDOW *));
+	
+	unblind_info_t *info = (unblind_info_t *) malloc(INFO_SIZE);
+	setup_unblind_info(info);
+	
+	print_to_log("info created");
+	
+	signal(SIGINT, handle);
+	
+	WINDOW *main = initscr();
+    win = newwin(MAX_LINES, MAX_CHARS_PER_LINE, 0, 0);
 	noecho();
 	nodelay(stdscr, TRUE);
 	keypad(stdscr, TRUE);
-	//immedok(win, TRUE);
 	scrollok(win, FALSE);
 	raw();
-	//idlok(win, FALSE);
-	//nl();
-	//wsetscrreg(win, MAX_LINES, 0);
+	
     if(argc == 2) {
         file_name = argv[1];
         f = fopen(file_name, "a+"); // opens for reading and appending
@@ -43,15 +47,21 @@ int main(int argc, char *argv[]) {
         endwin();
         exit(1);
     }
-    read_contents_from_file(f, win);
-	draw(win);
-    for(;;) {
-        manage_input(file_name, win);
-        wrefresh(win);
-    }
 	
+    read_contents_from_file(f, win, info);
+	print_to_log("right before draw\n");
+	draw(win, info);
+	draw(win, info);
+	print_to_log("Starting main loop\n");
+    for(;;) {
+		print_to_log("Main loop start\n");
+        manage_input(file_name, win, info);
+		print_to_log("Main loop end\n");
+    }
+	fclose(f);
     endwin();
 	return 0;
 }
+
 
 void handle() { }

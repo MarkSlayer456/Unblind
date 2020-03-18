@@ -1,16 +1,16 @@
 IDIR = ../include
 CC=gcc
-CFLAGS=-I$(IDIR)
+CFLAGS=-I$(IDIR) -Wall
 
 ODIR=obj
 LDIR=../lib
 
 LIBS=-lncurses
 
-_DEPS = unblind.h
+_DEPS = unblind.h actions.h
 DEPS = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
-_OBJ = unblind2.o main.o
+_OBJ = unblind2.o main.o actions.o
 OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
 
 $(ODIR)/%.o: %.c $(DEPS)
