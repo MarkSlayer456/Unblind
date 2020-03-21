@@ -44,16 +44,23 @@ void draw(WINDOW *win, unblind_info_t *info) {
 	int y;
 	for(int i = info->scroll_offset; i < MAX_LINES; i++) {
 		y = i - info->scroll_offset;
+		int x = 0;
 		for(int j = 0; j <= strlen(info->contents[i]); j++) {
 			if(info->contents[i][j] != '\0') {
 				// bottom two lines are used for messages and other things
 				if(y <= LINES-PROTECTED_LINES) {
-				    wmove(win, y, j);
-					waddch(win, info->contents[i][j]);
+				    wmove(win, y, x);
+				    if(info->contents[i][j] == 9) {
+						/*for(int i = 0; i < tab_size; i++) {
+						TODO add later	
+						}*/
+						waddch(win, ' ');
+				    } else {
+						waddch(win, info->contents[i][j]);
+					}
 				}
-				//TODO
-				//wprintmv(win, message);
-			}			
+			}
+			x++;			
 		}			
 	}
 	wmove(win, LINES-2, 0);
@@ -85,10 +92,18 @@ void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
 				j++;
 				i = 0;				
 			}
-		} else if(c >= 32 && c <= 126) {
+		} else if((c >= 32 && c <= 126) || c == 9) { // 9 is tab
             // add char
-            info->contents[j][i] = c;
-            i++;
+            if(c == 9) {
+            	info->contents[j][i++] = 9;
+            	info->contents[j][i++] = 9;
+            	info->contents[j][i++] = 9;
+            	info->contents[j][i] = 9;
+            	i++;
+            } else {
+            	info->contents[j][i] = c;
+           		i++;
+            }
         } else {
 			info->contents[j][i] = c;
 			info->contents[j][i+1] = '\0';
@@ -104,18 +119,34 @@ void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
 void write_contents_to_file(char *file_name, unblind_info_t *info) {
     FILE *fedit = fopen(file_name, "w+");
     for(int i = 0; i < MAX_LINES; i++) {
-        char *c = info->contents[i];
-		if(strlen(c)) {
+		char *str = info->contents[i];
+		for(int j = 0; j < strlen(str); j++) {
+			if(strlen(str) == 0) {
+				fputc('\n', fedit);
+				continue;
+			}
+			char c = info->contents[i][j];
+			if(c == 9) {
+				j += 3;
+				fputc(c, fedit);
+			} else {
+				fputc(c, fedit);
+			}
+		}
+       
+		/*if(strlen(c)) {
 			fputs(c, fedit);
 		} else if(c[0] == '\n') {
 			fputs("\n", fedit);
-		}
+		}*/
     }
     fclose(fedit);
 }
 
 void update_cursor_pos(WINDOW *win, unblind_info_t *info) {
     mvprintw(LINES-1, COLS - 13, "pos: %d, %d ", info->cx, info->cy);
+    mvprintw(LINES-1, COLS - 26, "char: ----");
+    mvprintw(LINES-1, COLS - 26, "char: %c", info->contents[info->cy][info->cx]);
 	//wcy = cy%LINES_PER_WINDOW;
     move(info->wcy, info->cx);
 	refresh();
@@ -151,6 +182,9 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 		case 8:
 		case 7:
 			backspace_action(win, info);
+			break;
+		case 9:
+			tab_action(win, info);
 			break;
 		case 10:
 			enter_key_action(win, info);

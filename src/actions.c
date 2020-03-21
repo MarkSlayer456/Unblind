@@ -9,7 +9,14 @@
 #include "actions.h"
 
 void move_cursor_up(WINDOW *win, unblind_info_t *info) {
-	if(!(info->cy-1 <= -1)) {
+	if(info->contents[info->cy-1][info->cx] == 9) {
+		info->cx++;
+		info->cy--;
+		info->wcy--;
+		while(info->contents[info->cy][info->cx] == 9) {
+			info->cx++;
+		}
+	} else if(!(info->cy-1 <= -1)) {
 		info->cy--;
 		info->wcy--;
 		if(info->cx > strlen(info->contents[info->cy])-1) {
@@ -25,7 +32,14 @@ void move_cursor_up(WINDOW *win, unblind_info_t *info) {
 }
 
 void move_cursor_down(WINDOW *win, unblind_info_t *info) {
-	if(info->cx <= strlen(info->contents[info->cy+1]) && info->contents[info->cy+1][0] != '\0') {
+	if(info->contents[info->cy+1][info->cx] == 9) {
+		info->cx++;
+		info->cy++;
+		info->wcy++;
+		while(info->contents[info->cy][info->cx] == 9) {
+			info->cx++;
+		}
+	} else if(info->cx <= strlen(info->contents[info->cy+1]) && info->contents[info->cy+1][0] != '\0') {
 		info->cy++;
 		info->wcy++;
 	} else if(info->contents[info->cy+1][0] != '\0') {
@@ -40,7 +54,12 @@ void move_cursor_down(WINDOW *win, unblind_info_t *info) {
 }
 
 void move_cursor_left(WINDOW *win, unblind_info_t *info) {
-	if(info->contents[info->cy][info->cx-1] && info->cx-1 != -1) {
+	if(info->contents[info->cy][info->cx-1] == 9) {
+		info->cx -= 4;
+		if(info->cx == 0) {
+			move_cursor_up(win, info);
+		}
+	} else if(info->contents[info->cy][info->cx-1] && info->cx-1 != -1) {
 		info->cx--;
 	} else if(info->cx-1 == -1 && !(info->cy-1 <= -1)) {
 		--info->cy;
@@ -52,13 +71,25 @@ void move_cursor_left(WINDOW *win, unblind_info_t *info) {
 	}
 }
 
-void  move_cursor_right(WINDOW *win, unblind_info_t *info) {
-	if(info->contents[info->cy][info->cx] != '\n' && info->contents[info->cy][info->cx] != '\0') {
+void move_cursor_right(WINDOW *win, unblind_info_t *info) {
+	if(info->contents[info->cy][info->cx] == 9) {
+		info->cx += 4;
+	} else if(info->contents[info->cy][info->cx] != '\n' && info->contents[info->cy][info->cx] != '\0') {
 		info->cx++;
 	} else if((info->contents[info->cy+1][0] || info->contents[info->cy+1][0] == '\n') && !(info->cy+1 >= MAX_LINES)) {
 		info->cx = 0;
-		info->cy++;
-		info->wcy++;
+		if(info->contents[info->cy+1][info->cx] == 9) {
+			info->cx++;
+			info->cy++;
+			info->wcy++;
+			while(info->contents[info->cy][info->cx] == 9) {
+				info->cx++;
+			}
+		} else {
+			info->cy++;
+			info->wcy++;
+		}
+		
 	}
 	if(LINES_PER_WINDOW-1 == info->cy-info->scroll_offset && info->cx == strlen(info->contents[info->cy])) {
 			unblind_scroll_down(win, info);
@@ -93,9 +124,16 @@ void backspace_action(WINDOW *win, unblind_info_t *info) {
 		info->cy--;
 		info->wcy--;
 	} else {
-		info->cx--;
-		move_to_left(info->contents[info->cy], info->cx);
-		update_cursor_pos(win, info);
+		if(info->contents[info->cy][info->cx-1] == 9) {
+			for(int i = 0; i < 4; i++) {
+				info->cx--;
+				move_to_left(info->contents[info->cy], info->cx);
+			}
+		} else {
+			info->cx--;
+			move_to_left(info->contents[info->cy], info->cx);
+			update_cursor_pos(win, info);
+		}
 	}
 }
 
@@ -140,7 +178,7 @@ void enter_key_action(WINDOW *win, unblind_info_t *info) {
 	//cy--;
 }
 
-void  save_file(char *file_name, unblind_info_t *info) {
+void save_file(char *file_name, unblind_info_t *info) {
 	write_contents_to_file(file_name, info);
 	strcat(info->message, "Saved ");
 	strcat(info->message, file_name);
@@ -174,5 +212,11 @@ void type_char(char c, unblind_info_t *info) {
         strcpy(info->message, "");
 	} else {
 		return; // DO NOT REDDRAW SCREEN
+	}
+}
+
+void tab_action(WINDOW *win, unblind_info_t *info) {
+	for(int i = 0; i < 4; i++) {
+		array_insert(info->contents[info->cy], info->cx++, 9);
 	}
 }

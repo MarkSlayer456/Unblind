@@ -11,5 +11,6 @@ void backspace_action(WINDOW *win, unblind_info_t *info);
 void enter_key_action(WINDOW *win, unblind_info_t *info);
 void save_file(char *file_name, unblind_info_t *info);
 void type_char(char c, unblind_info_t *info);
+void tab_action(WINDOW *win, unblind_info_t *info);
 
 #endif
