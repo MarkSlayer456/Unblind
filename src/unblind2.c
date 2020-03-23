@@ -13,10 +13,10 @@ void *find_word(char *str, char **contents) {
 	for(int i = 0; i < MAX_LINES; i++) {
 		for(int k = 0; k < strlen(contents[i])-strlen(str); i++) {
 			for(int j = 0; j < strlen(str); j++) {
-				//TODO		
+				//TODO
 			}
 		}
-		
+
 	}
 	return NULL;
 }
@@ -52,7 +52,7 @@ void draw(WINDOW *win, unblind_info_t *info) {
 				    wmove(win, y, x);
 				    if(info->contents[i][j] == 9) {
 						/*for(int i = 0; i < tab_size; i++) {
-						TODO add later	
+						TODO add later
 						}*/
 						waddch(win, ' ');
 				    } else {
@@ -60,8 +60,8 @@ void draw(WINDOW *win, unblind_info_t *info) {
 					}
 				}
 			}
-			x++;			
-		}			
+			x++;
+		}
 	}
 	wmove(win, LINES-2, 0);
 	mvprintw(LINES-2, 0, info->message);
@@ -86,11 +86,11 @@ void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
 				info->contents[j][i] = '\n';
 				info->contents[j][i+1] = '\0';
 				j++;
-				i = 0;	
+				i = 0;
 			} else {
 				info->contents[j][i] = '\0';
 				j++;
-				i = 0;				
+				i = 0;
 			}
 		} else if((c >= 32 && c <= 126) || c == 9) { // 9 is tab
             // add char
@@ -133,7 +133,7 @@ void write_contents_to_file(char *file_name, unblind_info_t *info) {
 				fputc(c, fedit);
 			}
 		}
-       
+
 		/*if(strlen(c)) {
 			fputs(c, fedit);
 		} else if(c[0] == '\n') {
@@ -189,20 +189,24 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 		case 10:
 			enter_key_action(win, info);
 			break;
+		case 1: // ctrl-a
+			delete_line(win, info);
+			shift_up(info);
+			break;
 		default:
 			type_char(c, info);
 			break;
 	}
-	
+
 	draw(win, info);
 }
 
-void delete_line(WINDOW *win, int y, unblind_info_t *info) {
+void delete_line(WINDOW *win, unblind_info_t *info) {
 	int i = 0;
-	while(info->contents[y][i]) {
-		wmove(win, y, i);
+	while(info->contents[info->cy][i]) {
+		wmove(win, info->wcy, i);
 		wdelch(win);
-		move_to_left(info->contents[y], i);
+		move_to_left(info->contents[info->cy], i);
 	}
 }
 
@@ -210,6 +214,18 @@ void move_to_left(char *arr, int left) {
     for(int j = left; j < MAX_CHARS_PER_LINE; j++) {
         arr[j] = arr[j + 1];
     }
+}
+
+void shift_up(unblind_info_t *info) {
+	for(int i = info->cy+1; i < MAX_LINES; i++) {
+		if(info->contents[i][0] == '\0') {
+			break;
+		}
+		info->contents[i - 1] = strdup(info->contents[i]);
+		info->contents[i] = strdup("");
+	}
+	info->cy--;
+	info->wcy--;
 }
 
 int array_insert(char *a, int x, char c) {

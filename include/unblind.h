@@ -21,7 +21,7 @@ typedef struct unblind_info {
 void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info);
 void write_contents_to_file(char *file_name, unblind_info_t *info);
 void manage_input(char *file_input, WINDOW *win, unblind_info_t *info);
-void delete_line(WINDOW *win, int y, unblind_info_t *info);
+void delete_line(WINDOW *win, unblind_info_t *info);
 void draw(WINDOW *win, unblind_info_t *info);
 
 void unblind_scroll_down(WINDOW *win, unblind_info_t *info);
@@ -37,5 +37,6 @@ void update_cursor_pos(WINDOW *win, unblind_info_t *info);
 void print_to_log(const char *error);
 int array_insert(char *a, int x, char c);
 void move_to_left(char *arr, int left);
+void shift_up(unblind_info_t *info);
 
 #endif

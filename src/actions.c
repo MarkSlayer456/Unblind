@@ -107,9 +107,9 @@ void backspace_action(WINDOW *win, unblind_info_t *info) {
 		mvwdelch(win, info->cy, info->cx);
 		info->contents[info->cy][info->cx] = '\0';
 		strcat(info->contents[info->cy], info->contents[info->cy+1]);
-		delete_line(win, (info->cy + 1), info);
-		strcpy(info->contents[info->cy+1], "\n");
 		info->cy++;
+		delete_line(win, info);
+		strcpy(info->contents[info->cy], "\n");
 
 		for(int k = info->cy; k < MAX_LINES-1; k++) {
 			strcpy(info->contents[k], info->contents[k+1]);
