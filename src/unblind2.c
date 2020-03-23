@@ -22,6 +22,16 @@ void *find_word(char *str, char **contents) {
 }
 */
 
+void unblind_scroll_check(WINDOW *win, unblind_info_t *info) {
+	if(info->wcy <= 6 && info->scroll_offset > 0) {
+		info->wcy++;
+		unblind_scroll_up(win, info);
+	} else if(LINES_PER_WINDOW-6 <= info->wcy && info->contents[info->wcy-1][0] != '\0') {
+		info->wcy--;
+		unblind_scroll_down(win, info);
+	}
+}
+
 void unblind_scroll_down(WINDOW *win, unblind_info_t *info) {
 	if(!(info->cy+1 >= MAX_LINES)) {
 		info->scroll_offset++;
@@ -133,12 +143,6 @@ void write_contents_to_file(char *file_name, unblind_info_t *info) {
 				fputc(c, fedit);
 			}
 		}
-
-		/*if(strlen(c)) {
-			fputs(c, fedit);
-		} else if(c[0] == '\n') {
-			fputs("\n", fedit);
-		}*/
     }
     fclose(fedit);
 }
@@ -147,15 +151,12 @@ void update_cursor_pos(WINDOW *win, unblind_info_t *info) {
     mvprintw(LINES-1, COLS - 13, "pos: %d, %d ", info->cx, info->cy);
     mvprintw(LINES-1, COLS - 26, "char: ----");
     mvprintw(LINES-1, COLS - 26, "char: %c", info->contents[info->cy][info->cx]);
-	//wcy = cy%LINES_PER_WINDOW;
     move(info->wcy, info->cx);
 	refresh();
-	//wrefresh(win);
 }
 
 void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 	char c = getch();
-    //TODO maybe make this a switch
 	if(c == EOF) {
 		return; // DON'T REDRAW SCREEN
 	}
@@ -190,8 +191,11 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			enter_key_action(win, info);
 			break;
 		case 1: // ctrl-a
+			duplicate_line(win, info);
+			break;
+		case 24: // ctrl-x
 			delete_line(win, info);
-			shift_up(info);
+			shift_up(win, info);
 			break;
 		default:
 			type_char(c, info);
@@ -201,11 +205,14 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 	draw(win, info);
 }
 
+void duplicate_line(WINDOW *win, unblind_info_t *info) {
+	shift_down(win, info);
+	info->contents[info->cy] = strdup(info->contents[info->cy-1]);
+}
+
 void delete_line(WINDOW *win, unblind_info_t *info) {
 	int i = 0;
 	while(info->contents[info->cy][i]) {
-		wmove(win, info->wcy, i);
-		wdelch(win);
 		move_to_left(info->contents[info->cy], i);
 	}
 }
@@ -216,17 +223,31 @@ void move_to_left(char *arr, int left) {
     }
 }
 
-void shift_up(unblind_info_t *info) {
+void shift_up(WINDOW *win, unblind_info_t *info) {
 	for(int i = info->cy+1; i < MAX_LINES; i++) {
 		if(info->contents[i][0] == '\0') {
 			break;
+		}
+		if(info->cy == 0) { // at the top of the file, return
+			return;
 		}
 		info->contents[i - 1] = strdup(info->contents[i]);
 		info->contents[i] = strdup("");
 	}
 	info->cy--;
 	info->wcy--;
+	unblind_scroll_check(win, info);
 }
+
+void shift_down(WINDOW *win, unblind_info_t *info) {
+	for(int i = MAX_LINES-1; i > info->cy; i--) {
+		info->contents[i] = strdup(info->contents[i-1]);
+	}
+	info->cy++;
+	info->wcy++;
+	unblind_scroll_check(win, info);
+}
+
 
 int array_insert(char *a, int x, char c) {
 	char par[255] = "";
@@ -244,13 +265,11 @@ int array_insert(char *a, int x, char c) {
 
 void print_to_log(const char *error) {
     FILE *fedit = fopen("log.txt", "w+");
-       // FILE *fedit2 = fopen(file_name, "a");
 		if(strlen(error)) {
 			fputs(error, fedit);
 		} else if(error[0] == '\n') {
 			fputs("\n", fedit);
 		}
-        //fclose(fedit);
     fclose(fedit);
 }
 

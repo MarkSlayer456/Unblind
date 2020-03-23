@@ -22,10 +22,7 @@ void move_cursor_up(WINDOW *win, unblind_info_t *info) {
 		} else if(info->contents[info->cy][0] == '\n') {
 			info->cx = 0;
 		}
-		if(info->wcy <= 6 && info->scroll_offset > 0) {
-			info->wcy++;
-			unblind_scroll_up(win, info);
-		}
+		unblind_scroll_check(win, info);
 	}
 }
 
@@ -45,10 +42,7 @@ void move_cursor_down(WINDOW *win, unblind_info_t *info) {
 		info->wcy++;
 		info->cx = strlen(info->contents[info->cy])-1;
 	}
-	if(LINES-6 <= info->wcy && info->contents[info->wcy-1][0] != '\0') {
-		info->wcy--;
-		unblind_scroll_down(win, info);
-	}
+	unblind_scroll_check(win, info);
 }
 
 void move_cursor_left(WINDOW *win, unblind_info_t *info) {
@@ -64,8 +58,8 @@ void move_cursor_left(WINDOW *win, unblind_info_t *info) {
 		info->cx = strlen(info->contents[info->cy])-1;
 		info->wcy--;
 	}
-	if(info->cy == 0 && info->cx == 0) {
-		unblind_scroll_up(win, info);
+	if(info->cx == 0) {
+		unblind_scroll_check(win, info);
 	}
 }
 
@@ -76,21 +70,15 @@ void move_cursor_right(WINDOW *win, unblind_info_t *info) {
 		info->cx++;
 	} else if((info->contents[info->cy+1][0] || info->contents[info->cy+1][0] == '\n') && !(info->cy+1 >= MAX_LINES)) {
 		info->cx = 0;
-		if(info->contents[info->cy+1][info->cx] == 9) {
+		info->cy++;
+		info->wcy++;
+		unblind_scroll_check(win, info);
+		if(info->contents[info->cy][info->cx] == 9) {
 			info->cx++;
-			info->cy++;
-			info->wcy++;
 			while(info->contents[info->cy][info->cx] == 9) {
 				info->cx++;
 			}
-		} else {
-			info->cy++;
-			info->wcy++;
 		}
-
-	}
-	if(LINES_PER_WINDOW-1 == info->cy-info->scroll_offset && info->cx == strlen(info->contents[info->cy])) {
-			unblind_scroll_down(win, info);
 	}
 }
 

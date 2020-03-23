@@ -37,6 +37,10 @@ void update_cursor_pos(WINDOW *win, unblind_info_t *info);
 void print_to_log(const char *error);
 int array_insert(char *a, int x, char c);
 void move_to_left(char *arr, int left);
-void shift_up(unblind_info_t *info);
+void shift_up(WINDOW *win, unblind_info_t *info);
+void shift_down(WINDOW *win, unblind_info_t *info);
+void duplicate_line(WINDOW *win, unblind_info_t *info);
+void unblind_scroll_check(WINDOW *win, unblind_info_t *info);
+
 
 #endif
