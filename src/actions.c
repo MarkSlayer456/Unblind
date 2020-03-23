@@ -9,17 +9,15 @@
 #include "actions.h"
 
 void move_cursor_up(WINDOW *win, unblind_info_t *info) {
-	if(info->contents[info->cy-1][info->cx] == 9) {
-		info->cx++;
+	 if(!(info->cy-1 <= -1)) {
 		info->cy--;
 		info->wcy--;
-		while(info->contents[info->cy][info->cx] == 9) {
-			info->cx++;
-		}
-	} else if(!(info->cy-1 <= -1)) {
-		info->cy--;
-		info->wcy--;
-		if(info->cx > strlen(info->contents[info->cy])-1) {
+		if(info->contents[info->cy][info->cx] == 9) {
+				info->cx++;
+				while(info->contents[info->cy][info->cx] == 9) {
+					info->cx++;
+				}
+		} else if(info->cx > strlen(info->contents[info->cy])-1) {
 			info->cx = strlen(info->contents[info->cy])-1;
 		} else if(info->contents[info->cy][0] == '\n') {
 			info->cx = 0;
@@ -63,7 +61,7 @@ void move_cursor_left(WINDOW *win, unblind_info_t *info) {
 		info->cx--;
 	} else if(info->cx-1 == -1 && !(info->cy-1 <= -1)) {
 		--info->cy;
-		info->cx = strlen(info->contents[info->cy])-1;	
+		info->cx = strlen(info->contents[info->cy])-1;
 		info->wcy--;
 	}
 	if(info->cy == 0 && info->cx == 0) {
@@ -89,7 +87,7 @@ void move_cursor_right(WINDOW *win, unblind_info_t *info) {
 			info->cy++;
 			info->wcy++;
 		}
-		
+
 	}
 	if(LINES_PER_WINDOW-1 == info->cy-info->scroll_offset && info->cx == strlen(info->contents[info->cy])) {
 			unblind_scroll_down(win, info);
@@ -112,11 +110,11 @@ void backspace_action(WINDOW *win, unblind_info_t *info) {
 		delete_line(win, (info->cy + 1), info);
 		strcpy(info->contents[info->cy+1], "\n");
 		info->cy++;
-		
+
 		for(int k = info->cy; k < MAX_LINES-1; k++) {
 			strcpy(info->contents[k], info->contents[k+1]);
 		}
-		
+
 		if(info->wcy <= 6 && info->scroll_offset > 0) {
 			info->wcy++;
 			unblind_scroll_up(win, info);
@@ -148,7 +146,7 @@ void enter_key_action(WINDOW *win, unblind_info_t *info) {
 		//char partition[MAX_CHARS_PER_LINE] = "";
 		char *partition = (char *)malloc(MAX_CHARS_PER_LINE * sizeof(char));
 		memset(partition, 0, MAX_CHARS_PER_LINE * sizeof(char));
-		
+
 		int j = 0;
 		for(int i = info->cx; i <= strlen(info->contents[info->cy]); i++) {
 			partition[j] = info->contents[info->cy][i];
@@ -186,7 +184,7 @@ void save_file(char *file_name, unblind_info_t *info) {
 
 void type_char(char c, unblind_info_t *info) {
 	if(c != EOF) {
-        if(!iscntrl(c)) {
+        if(!iscntrl(c)) { //TODO this if doesn't work
 			array_insert(info->contents[info->cy], info->cx, c);
 			info->cx++;
 			// auto completion for ()'s and such
