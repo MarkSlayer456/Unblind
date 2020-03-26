@@ -105,11 +105,10 @@ void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
 		} else if((c >= 32 && c <= 126) || c == 9) { // 9 is tab
             // add char
             if(c == 9) {
-            	info->contents[j][i++] = 9;
-            	info->contents[j][i++] = 9;
-            	info->contents[j][i++] = 9;
-            	info->contents[j][i] = 9;
-            	i++;
+				for(int k = 0; k < 4; k++) {
+					info->contents[j][i] = 9;
+					i++;
+				}
             } else {
             	info->contents[j][i] = c;
            		i++;
@@ -156,45 +155,93 @@ void update_cursor_pos(WINDOW *win, unblind_info_t *info) {
 }
 
 void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
+	print_to_log("managing input...\n");
 	char c = getch();
 	if(c == EOF) {
 		return; // DON'T REDRAW SCREEN
 	}
-	switch(c) {
-		case 2: // down arrow
+
+	int x;
+	x = c;
+	if(c == 27) {
+		c = getch();
+		if(c == 91) { // is not a ctrl arrow key
+			c = getch();
+			x = ARROW_KEY_MOD + c;
+		} else if(c == 79) { // is a ctrl arrow key
+			c = getch();
+			x = CTRL_ARROW_KEY_MOD + c;
+		}
+	}
+
+	switch(x) {
+		case CTRL_DOWN_ARROW:
+			for(int i = 0; i < MAX_LINES; i++) {
+				if(info->contents[i][0] == '\0') {
+					break;
+				}
+				move_cursor_down(win, info);
+			}
+			info->cx = strlen(info->contents[info->cy])-1;
+			break;
+		case CTRL_UP_ARROW:
+			for(int i = 0; i < MAX_LINES; i++) {
+				if(info->contents[i] == NULL) {
+					break;
+				}
+				move_cursor_up(win, info);
+			}
+			info->cx = strlen(info->contents[info->cy])-1;
+			break;
+		case CTRL_RIGHT_ARROW:
+			for(int i = 0; i < (strlen(info->contents[info->cy]) - 1) - info->cx;) {
+				move_cursor_right(win, info);
+			}
+			break;
+		case CTRL_LEFT_ARROW:
+			for(int i = 0; i < info->cx;) {
+				if(info->contents[info->cy][info->cx-1] == TAB_KEY) {
+					break;
+				}
+				move_cursor_left(win, info);
+			}
+			break;
+		case DOWN_ARROW: // down arrow
 			move_cursor_down(win, info);
 			break;
-		case 3: // up arrow
+		case UP_ARROW: // up arrow
 			move_cursor_up(win, info);
 			break;
-		case 4: // left arrow
+		case LEFT_ARROW: // left arrow
 			move_cursor_left(win, info);
 			break;
-		case 5: // right arrow
+		case RIGHT_ARROW: // right arrow
 			move_cursor_right(win, info);
 			break;
-		case 17: // ctrl-q
+		case CTRL_Q: // ctrl-q
 			shutdown(info);
 			break;
-		case 19: // ctrl-s
+		case CTRL_S: // ctrl-s
 			save_file(file_name, info);
 			break;
-		case 127:
-		case 8:
-		case 7:
+		case BACKSPACE_KEY_0:
+		case BACKSPACE_KEY_1:
+		case BACKSPACE_KEY_2:
 			backspace_action(win, info);
 			break;
-		case 9:
+		case TAB_KEY:
 			tab_action(win, info);
 			break;
-		case 10:
+		case ENTER_KEY:
 			enter_key_action(win, info);
 			break;
-		case 1: // ctrl-a
+		case CTRL_D: // ctrl-d
 			duplicate_line(win, info);
 			break;
-		case 24: // ctrl-x
+		case CTRL_X: // ctrl-x
+			print_to_log("deleting line...\n");
 			delete_line(win, info);
+			print_to_log("Shifting up...\n");
 			shift_up(win, info);
 			break;
 		default:
@@ -207,13 +254,22 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 
 void duplicate_line(WINDOW *win, unblind_info_t *info) {
 	shift_down(win, info);
-	info->contents[info->cy] = strdup(info->contents[info->cy-1]);
+	strcpy(info->contents[info->cy], info->contents[info->cy-1]);
 }
 
 void delete_line(WINDOW *win, unblind_info_t *info) {
 	int i = 0;
 	while(info->contents[info->cy][i]) {
 		move_to_left(info->contents[info->cy], i);
+	}
+	if(info->cy == 0 && info->contents[info->cy+1][0] == '\0') {
+		info->contents[info->cy][0] = '\n';
+		info->contents[info->cy][1] = '\0';
+		info->cx = 0;
+	} else if(info->contents[info->cy + 1][0] == '\0') {
+		info->cy--;
+		info->wcy--;
+		unblind_scroll_check(win, info);
 	}
 }
 
@@ -224,24 +280,22 @@ void move_to_left(char *arr, int left) {
 }
 
 void shift_up(WINDOW *win, unblind_info_t *info) {
+	if(info->cy == 0 && info->contents[info->cy+1][0] == '\0') { // at the top of the file, return
+		return;
+	}
 	for(int i = info->cy+1; i < MAX_LINES; i++) {
 		if(info->contents[i][0] == '\0') {
 			break;
 		}
-		if(info->cy == 0) { // at the top of the file, return
-			return;
-		}
-		info->contents[i - 1] = strdup(info->contents[i]);
-		info->contents[i] = strdup("");
+		strcpy(info->contents[i-1], info->contents[i]);
+		strcpy(info->contents[i], "");
 	}
-	info->cy--;
-	info->wcy--;
-	unblind_scroll_check(win, info);
+	info->cx = strlen(info->contents[info->cy])-1;
 }
 
 void shift_down(WINDOW *win, unblind_info_t *info) {
 	for(int i = MAX_LINES-1; i > info->cy; i--) {
-		info->contents[i] = strdup(info->contents[i-1]);
+		strcpy(info->contents[i], info->contents[i-1]);
 	}
 	info->cy++;
 	info->wcy++;
@@ -264,7 +318,8 @@ int array_insert(char *a, int x, char c) {
 }
 
 void print_to_log(const char *error) {
-    FILE *fedit = fopen("log.txt", "w+");
+	//TODO remove this file later, kind of annoying
+    FILE *fedit = fopen(".unblind_log.txt", "w+");
 		if(strlen(error)) {
 			fputs(error, fedit);
 		} else if(error[0] == '\n') {

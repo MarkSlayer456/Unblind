@@ -8,6 +8,33 @@
 #define LINES_PER_WINDOW 	36
 #define PROTECTED_LINES 	3
 
+#define ARROW_KEY_MOD	1000
+#define DOWN_ARROW		ARROW_KEY_MOD + 66
+#define UP_ARROW		ARROW_KEY_MOD + 65
+#define RIGHT_ARROW		ARROW_KEY_MOD + 67
+#define LEFT_ARROW		ARROW_KEY_MOD + 68
+
+#define CTRL_ARROW_KEY_MOD		1100
+#define CTRL_DOWN_ARROW			CTRL_ARROW_KEY_MOD + 66
+#define CTRL_UP_ARROW			CTRL_ARROW_KEY_MOD + 65
+#define CTRL_RIGHT_ARROW		CTRL_ARROW_KEY_MOD + 67
+#define CTRL_LEFT_ARROW			CTRL_ARROW_KEY_MOD + 68
+
+#define BACKSPACE_KEY_0	127
+#define BACKSPACE_KEY_1 8
+#define BACKSPACE_KEY_2 7
+#define ENTER_KEY		10
+#define TAB_KEY 		9
+#define CTRL_D			4
+#define CTRL_X			24
+#define CTRL_S			19
+#define CTRL_Q			17
+
+typedef struct user_settings {
+	int tabsize;
+	FILE *log;
+} user_settings_t;
+
 typedef struct unblind_info {
 	int cx;
 	int cy;

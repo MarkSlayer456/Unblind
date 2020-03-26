@@ -166,6 +166,7 @@ void enter_key_action(WINDOW *win, unblind_info_t *info) {
 
 void save_file(char *file_name, unblind_info_t *info) {
 	write_contents_to_file(file_name, info);
+	strcpy(info->message, "");
 	strcat(info->message, "Saved ");
 	strcat(info->message, file_name);
 }
