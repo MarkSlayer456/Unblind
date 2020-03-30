@@ -176,7 +176,7 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 
 	switch(x) {
 		case CTRL_DOWN_ARROW:
-			for(int i = 0; i < MAX_LINES; i++) {
+			for(int i = info->cy; i < MAX_LINES; i++) {
 				if(info->contents[i][0] == '\0') {
 					break;
 				}
@@ -185,7 +185,7 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			info->cx = strlen(info->contents[info->cy])-1;
 			break;
 		case CTRL_UP_ARROW:
-			for(int i = 0; i < MAX_LINES; i++) {
+			for(int i = info->cy; i != 0; i--) {
 				if(info->contents[i] == NULL) {
 					break;
 				}
