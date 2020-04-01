@@ -8,44 +8,82 @@
 #include "unblind.h"
 #include "actions.h"
 
-/*
-void *find_word(char *str, char **contents) {
-	for(int i = 0; i < MAX_LINES; i++) {
-		for(int k = 0; k < strlen(contents[i])-strlen(str); i++) {
-			for(int j = 0; j < strlen(str); j++) {
-				//TODO
-			}
-		}
-
-	}
-	return NULL;
+d_linked_list_t *linked_list_d_create() {
+	print_to_log("Creating list...");
+	d_linked_list_t *new = (d_linked_list_t *)malloc(sizeof(d_linked_list_t));
+	new->head = NULL;
+	new->tail = NULL;
+	new->curr = 0;
+	return new;
 }
-*/
+
+void linked_list_d_add(d_linked_list_t *dll, void *value, int x, int y) {
+	print_to_log("Add to list...");
+	dll_node_t *new_node = (dll_node_t *)malloc(sizeof(dll_node_t));
+	new_node->value = value;
+	new_node->x = x;
+	new_node->y = y;
+
+	if(dll->head == NULL) {
+		new_node->next = NULL;
+		new_node->prev = NULL;
+		dll->head = new_node;
+		dll->tail = new_node;
+		return;
+	}
+	dll_node_t *curr = dll->head;
+	while(curr) {
+		if(curr->next == NULL) {
+			dll->tail = new_node;
+			curr->next = new_node;
+			new_node->prev = curr;
+			new_node->next = NULL;
+			return;
+		}
+		curr = curr->next;
+	}
+}
+
+dll_node_t *linked_list_d_get(d_linked_list_t *dll, int i) {
+	print_to_log("Get from list...");
+	if(dll->head == NULL) {
+		print_to_log("head was null...");
+		return NULL;
+	}
+	dll_node_t *tmp = dll->head;
+	for(int j = 0; j < i; j++) {
+		tmp = tmp->next;
+		if(tmp == NULL) {
+			return NULL;
+		}
+	}
+	dll->curr++;
+	print_to_log("returning tmp...");
+	return tmp;
+}
 
 void unblind_scroll_check(WINDOW *win, unblind_info_t *info) {
-	if(info->wcy <= 6 && info->scroll_offset > 0) {
-		info->wcy++;
+	if(info->wcy <= SCROLL_THRESHOLD && info->scroll_offset > 0
+		&& !(info->cy-1 <= -1)) {
 		unblind_scroll_up(win, info);
-	} else if(LINES_PER_WINDOW-6 <= info->wcy && info->contents[info->wcy-1][0] != '\0') {
-		info->wcy--;
+	} else if(LINES_PER_WINDOW - SCROLL_THRESHOLD <= info->wcy && info->contents[info->wcy-1][0] != '\0'
+				&& !(info->cy+1 >= MAX_LINES)) {
 		unblind_scroll_down(win, info);
 	}
 }
 
 void unblind_scroll_down(WINDOW *win, unblind_info_t *info) {
-	if(!(info->cy+1 >= MAX_LINES)) {
-		info->scroll_offset++;
-		update_cursor_pos(win, info);
-		draw(win, info);
-	}
+	info->wcy--;
+	info->scroll_offset++;
+	update_cursor_pos(win, info);
+	draw(win, info);
 }
 
 void unblind_scroll_up(WINDOW *win, unblind_info_t *info) {
-	if(!(info->cy-1 <= -1)) {
-		info->scroll_offset--;
-		update_cursor_pos(win, info);
-		draw(win, info);
-	}
+	info->wcy++;
+	info->scroll_offset--;
+	update_cursor_pos(win, info);
+	draw(win, info);
 }
 
 void draw(WINDOW *win, unblind_info_t *info) {
@@ -73,6 +111,7 @@ void draw(WINDOW *win, unblind_info_t *info) {
 			x++;
 		}
 	}
+	print_to_log("done drawing...");
 	wmove(win, LINES-2, 0);
 	mvprintw(LINES-2, 0, info->message);
 	wrefresh(win);
@@ -147,16 +186,33 @@ void write_contents_to_file(char *file_name, unblind_info_t *info) {
 }
 
 void update_cursor_pos(WINDOW *win, unblind_info_t *info) {
+	print_to_log("updating cursor pos...");
     mvprintw(LINES-1, COLS - 13, "pos: %d, %d ", info->cx, info->cy);
     mvprintw(LINES-1, COLS - 26, "char: ----");
     mvprintw(LINES-1, COLS - 26, "char: %c", info->contents[info->cy][info->cx]);
     move(info->wcy, info->cx);
 	refresh();
+	print_to_log("done updating cursor pos...");
 }
 
 void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 	print_to_log("managing input...\n");
 	char c = getch();
+	if(info->m == FIND) {
+		if(c == ENTER_KEY) {
+			find_str(win, info);
+			info->m = EDIT;
+			memset(info->fstr, 0, sizeof(char) * 24);
+		} else if((c >= 'A' && c <= 'z') ||  (c >= 0 && c <= 9)) {
+			if(strlen(info->fstr) == sizeof(info->fstr)) {
+				info->fstr = (char *) realloc((void *)info->fstr, sizeof(info->fstr) * 2);
+			}
+			info->fstr[strlen(info->fstr)] = c;
+			strcpy(info->message, info->fstr);
+			draw(win, info);
+		}
+		return;
+	}
 	if(c == EOF) {
 		return; // DON'T REDRAW SCREEN
 	}
@@ -217,6 +273,22 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			break;
 		case RIGHT_ARROW: // right arrow
 			move_cursor_right(win, info);
+			break;
+		case CTRL_F:
+			//TODO
+			// enum mode edit = EDIT;
+			info->m = FIND;
+			memset(info->fstr, 0, sizeof(char) * 24);
+			memset(info->message, 0, MAX_CHARS_PER_LINE * sizeof(char));
+			/*if(info->fstr == NULL) {
+				info->fstr = (char *) malloc(sizeof(char) * 12);
+			} else {
+				free(info->fstr);
+			}*/
+
+			break;
+		case CTRL_P:
+			next_find_str(win, info);
 			break;
 		case CTRL_Q: // ctrl-q
 			shutdown(info);
@@ -288,7 +360,8 @@ void shift_up(WINDOW *win, unblind_info_t *info) {
 			break;
 		}
 		strcpy(info->contents[i-1], info->contents[i]);
-		strcpy(info->contents[i], "");
+		memset(info->contents[i], 0, MAX_CHARS_PER_LINE * sizeof(char));
+		//strcpy(info->contents[i], "");
 	}
 	info->cx = strlen(info->contents[info->cy])-1;
 }
@@ -331,15 +404,20 @@ void print_to_log(const char *error) {
 void setup_unblind_info(unblind_info_t *info) {
 	info->cx = 0;
 	info->cy = 0;
+	info->wcy = 0;
+	info->wcx = 0;
+	info->scroll_offset = 0;
+
+	info->message = (char *)malloc(MAX_CHARS_PER_LINE * sizeof(char));
+	memset(info->message, 0, MAX_CHARS_PER_LINE * sizeof(char));
+	info->find = (d_linked_list_t *)malloc(sizeof(d_linked_list_t));
+	info->fstr = (char *)malloc(sizeof(char) * 24);
+	memset(info->fstr, 0, sizeof(char) * 24);
 	info->contents = (char **)malloc(MAX_LINES * sizeof(char *));
 	for(int i = 0; i < MAX_LINES; i++) {
 		info->contents[i] = (char *)malloc(MAX_CHARS_PER_LINE * sizeof(char));
 		memset(info->contents[i], 0, MAX_CHARS_PER_LINE * sizeof(char));
 	}
-	info->scroll_offset = 0;
-	info->wcy = 0;
-	info->wcx = 0;
-	info->message = (char *)malloc(MAX_CHARS_PER_LINE * sizeof(char));
 }
 
 void unblind_info_free(unblind_info_t *info) {
@@ -348,6 +426,8 @@ void unblind_info_free(unblind_info_t *info) {
 	}
 	free(info->contents);
 	free(info->message);
+	free(info->fstr);
+	free(info->find);
 	free(info);
 }
 
