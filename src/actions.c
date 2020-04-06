@@ -84,7 +84,7 @@ void move_cursor_right(WINDOW *win, unblind_info_t *info) {
 
 /**
 * Finds a word and moves the cursor to the first occurence of the word
-* to get the next word call next_find_str function
+* to get the next word recall the function
 */
 void find_str(WINDOW *win, unblind_info_t *info) {
 	info->find = linked_list_d_create();
@@ -184,6 +184,10 @@ void backspace_action(WINDOW *win, unblind_info_t *info) {
 		strcat(info->contents[info->cy], info->contents[info->cy+1]);
 		info->cy++;
 		delete_line(win, info);
+		if(info->contents[info->cy+1][0] == '\0') { // undo movement caused by delete line if the last line is deleted
+			info->cy++;
+			info->wcy++;
+		}
 		strcpy(info->contents[info->cy], "\n");
 
 		for(int k = info->cy; k < MAX_LINES-1; k++) {
