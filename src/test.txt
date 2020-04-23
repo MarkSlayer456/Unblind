@@ -1,6 +1,0 @@
-
-#include <stdio.h>
-
-	this is a test message to see if my text editor is working properly!
-I just want to make sure there aren't any bugs with it!
-testing

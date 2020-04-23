@@ -386,7 +386,7 @@ int array_insert(char *a, int x, char c) {
 	a[x] = c;
 	a[x+1] = '\0';
 	strcat(a, par);
-	if(a[x]) return 1;
+	if(a[x] != '\0') return 1;
 	return 0;
 }
 
