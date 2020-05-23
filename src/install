@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+sudo apt-get install libncurses5-dev libncursesw5-dev
+sudo yum install ncurses-devel
+sudo dnf install ncurses-devel
+echo "attempting to install ncurses"
+make

@@ -25,6 +25,6 @@ The main idea of unblind is to have a full text editor in the terminal with ever
 <ol>
 	<li> Clone repository: git clone https://www.github.com/markslayer456/unblind/ . </li>
 	<li> Cd to src folder: cd unblind/src/ </li>
-	<li> Run make command: make </li>
+	<li> Run install: sudo ./install </li>
 	<li> Executable is created in src folder </li>
 </ol>

@@ -5,62 +5,9 @@
 #include <ctype.h>
 #include <string.h>
 
+#include "double_linked_list.h"
 #include "unblind.h"
 #include "actions.h"
-
-d_linked_list_t *linked_list_d_create() {
-	print_to_log("Creating list...");
-	d_linked_list_t *new = (d_linked_list_t *)malloc(sizeof(d_linked_list_t));
-	new->head = NULL;
-	new->tail = NULL;
-	new->curr = 0;
-	return new;
-}
-
-void linked_list_d_add(d_linked_list_t *dll, void *value, int x, int y) {
-	print_to_log("Add to list...");
-	dll_node_t *new_node = (dll_node_t *)malloc(sizeof(dll_node_t));
-	new_node->value = value;
-	new_node->x = x;
-	new_node->y = y;
-
-	if(dll->head == NULL) {
-		new_node->next = NULL;
-		new_node->prev = NULL;
-		dll->head = new_node;
-		dll->tail = new_node;
-		return;
-	}
-	dll_node_t *curr = dll->head;
-	while(curr) {
-		if(curr->next == NULL) {
-			dll->tail = new_node;
-			curr->next = new_node;
-			new_node->prev = curr;
-			new_node->next = NULL;
-			return;
-		}
-		curr = curr->next;
-	}
-}
-
-dll_node_t *linked_list_d_get(d_linked_list_t *dll, int i) {
-	print_to_log("Get from list...");
-	if(dll->head == NULL) {
-		print_to_log("head was null...");
-		return NULL;
-	}
-	dll_node_t *tmp = dll->head;
-	for(int j = 0; j < i; j++) {
-		tmp = tmp->next;
-		if(tmp == NULL) {
-			return NULL;
-		}
-	}
-	dll->curr++;
-	print_to_log("returning tmp...");
-	return tmp;
-}
 
 void unblind_scroll_check(WINDOW *win, unblind_info_t *info) {
 	if(info->wcy <= SCROLL_THRESHOLD && info->scroll_offset > 0
@@ -316,8 +263,22 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			print_to_log("Shifting up...\n");
 			shift_up(win, info);
 			break;
+		case CTRL_Z: // ctrl-z
+			if(info->ur_manager->stack_u->tail != NULL) {
+				dll_node_t *node = (dll_node_t *) info->ur_manager->stack_u->tail;
+				ur_node_t *ur_node = (ur_node_t *) node->value;
+				if(ur_node->action == TYPE) {
+					undo_type_char(win, info, node->x, node->y);
+				} else if(ur_node->action == BACKSPACE) {
+					undo_backspace(win, info, ur_node->c, node->x, node->y);
+				}
+			}
+			// strcpy(info->message, (char *) linked_list_d_get(info->ur_manager->stack_u, 0)->value);
+			// ur_action(win, info, (char *) info->ur_manager->stack_u->tail->value, info->ur_manager->stack_u->tail->x, info->ur_manager->stack_u->tail->y);
+			//linked_list_d_pop(info->ur_manager->stack_u);
+			break;
 		default:
-			type_char(c, info);
+			type_char(c, info, 1);
 			break;
 	}
 
@@ -408,6 +369,9 @@ void setup_unblind_info(unblind_info_t *info) {
 	info->wcx = 0;
 	info->scroll_offset = 0;
 
+	info->ur_manager = (undo_redo_manager_t *) malloc(sizeof(undo_redo_manager_t));
+	setup_unblind_ur_manager(info->ur_manager);
+
 	info->message = (char *)malloc(MAX_CHARS_PER_LINE * sizeof(char));
 	memset(info->message, 0, MAX_CHARS_PER_LINE * sizeof(char));
 	info->find = (d_linked_list_t *)malloc(sizeof(d_linked_list_t));
@@ -428,6 +392,7 @@ void unblind_info_free(unblind_info_t *info) {
 	free(info->message);
 	free(info->fstr);
 	free(info->find);
+	free(info->ur_manager);
 	free(info);
 }
 

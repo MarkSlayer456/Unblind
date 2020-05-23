@@ -5,8 +5,11 @@
 #include <string.h>
 #include <ctype.h>
 
+#include "double_linked_list.h"
 #include "unblind.h"
 #include "actions.h"
+
+//TODO find command doesn't move the cursor to the message area and also can't backspace
 
 void move_cursor_up(WINDOW *win, unblind_info_t *info) {
 	 if(!(info->cy-1 <= -1)) {
@@ -171,6 +174,7 @@ void next_find_str(WINDOW *win, unblind_info_t *info) {
 
 void backspace_action(WINDOW *win, unblind_info_t *info) {
 	if(info->cx <= 0 && info->cy <= 0) return;
+	char del;
 	if(info->cx <= 0 && info->cy > 0) {
 		if(info->cy == 0) {
 			unblind_scroll_up(win, info);
@@ -178,6 +182,7 @@ void backspace_action(WINDOW *win, unblind_info_t *info) {
 		info->cy--;
 		int len = strlen(current_line(info));
 		info->cx = len;
+		del = current_character(info);
 		info->cx--;
 		mvwdelch(win, info->cy, info->cx);
 		info->contents[info->cy][info->cx] = '\0';
@@ -204,14 +209,29 @@ void backspace_action(WINDOW *win, unblind_info_t *info) {
 		if(prev_character(info) == 9) {
 			for(int i = 0; i < 4; i++) {
 				info->cx--;
+				del = current_character(info);
 				move_to_left(info->contents[info->cy], info->cx);
 			}
 		} else {
 			info->cx--;
+			del = current_character(info);
 			move_to_left(info->contents[info->cy], info->cx);
 			update_cursor_pos(win, info);
 		}
 	}
+	ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+	char *del1 = &del;
+	node->c = (char *) malloc(sizeof(char)); // won't be used
+	node->c = strdup(del1);
+	node->action = BACKSPACE;
+	linked_list_d_add(info->ur_manager->stack_u, (void *) node, info->cx, info->cy);
+
+
+	// char *del1 = &del;
+	// char *del2 = (char *) malloc(sizeof(char));
+	// del2 = strdup(del1);
+	// linked_list_d_add(info->ur_manager->stack_u, (void *) del2, info->cx, info->cy);
+	// strcpy(info->message, (char *) linked_list_d_get(info->ur_manager->stack_u, 0)->value);
 }
 
 void enter_key_action(WINDOW *win, unblind_info_t *info) {
@@ -256,7 +276,9 @@ void save_file(char *file_name, unblind_info_t *info) {
 	strcat(info->message, file_name);
 }
 
-void type_char(char c, unblind_info_t *info) {
+void type_char(char c, unblind_info_t *info, int add_to_ur_manager) {
+	int x = info->cx;
+	int y = info->cy;
 	if(c != EOF) {
         if(!iscntrl(c)) { //TODO this if doesn't work
 			array_insert(info->contents[info->cy], info->cx, c);
@@ -282,6 +304,12 @@ void type_char(char c, unblind_info_t *info) {
         	}
         }
         strcpy(info->message, "");
+		if(add_to_ur_manager == 1) {
+			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+			node->c = " "; // won't be used
+			node->action = TYPE;
+			linked_list_d_add(info->ur_manager->stack_u, (void *) node, x, y);
+		}
 	} else {
 		return; // DO NOT REDDRAW SCREEN
 	}
@@ -315,4 +343,37 @@ char *next_line(unblind_info_t *info) {
 
 char *prev_line(unblind_info_t *info) {
 	return info->contents[info->cy - 1];
+}
+
+void undo_type_char(WINDOW *win, unblind_info_t *info, int x, int y) {
+	move_to_left(info->contents[y], x);
+	info->cx = x;
+	while(y != info->wcy) {
+		if(info->wcy < y) {
+			info->cy++;
+			info->wcy++;
+	 	} else if(info->wcy > y) {
+			info->cy--;
+			info->wcy--;
+	 	}
+		unblind_scroll_check(win, info);
+	}
+	linked_list_d_pop(info->ur_manager->stack_u);
+}
+
+void undo_backspace(WINDOW *win, unblind_info_t *info, char *c, int x, int y) {
+	strcpy(info->message, c);
+	info->cx = x;
+	while(y != info->wcy) {
+		if(info->wcy < y) {
+			info->cy++;
+			info->wcy++;
+	 	} else if(info->wcy > y) {
+			info->cy--;
+			info->wcy--;
+	 	}
+		unblind_scroll_check(win, info);
+	}
+	type_char(*c, info, 0);
+	linked_list_d_pop(info->ur_manager->stack_u);
 }
