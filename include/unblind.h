@@ -67,6 +67,7 @@ void write_contents_to_file(char *file_name, unblind_info_t *info);
 void manage_input(char *file_input, WINDOW *win, unblind_info_t *info);
 void delete_line(WINDOW *win, unblind_info_t *info);
 void draw(WINDOW *win, unblind_info_t *info);
+void reset_unblind_info_contents(unblind_info_t *info);
 
 void unblind_scroll_down(WINDOW *win, unblind_info_t *info);
 void unblind_scroll_up(WINDOW *win, unblind_info_t *info);

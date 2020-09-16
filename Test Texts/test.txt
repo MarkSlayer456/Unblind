@@ -14,7 +14,19 @@
 	this is a test message to see if my text editor is working properly!
 	this is a test message to see if my text editor is working 
 properly!
-	
+
+function() {
+	if() {
+		try() {
+			//code
+		} catch() {
+			//throw error
+		}
+	}
+}
+
+Trying to test to see if everything is working proerrpy!
+
 this is a test message to see if my text editor is working properly!
 this is a test message to see if my text editor is working properly!
 this is a test message to see if my text editor is working properly!
