@@ -35,7 +35,7 @@ void unblind_scroll_up(WINDOW *win, unblind_info_t *info) {
 
 void draw(WINDOW *win, unblind_info_t *info) {
 	if(!info->contents) return;
-	werase(win);
+	//werase(win); this was causing errors with certain systms
 	int y;
 	for(int i = info->scroll_offset; i < MAX_LINES; i++) {
 		y = i - info->scroll_offset;
