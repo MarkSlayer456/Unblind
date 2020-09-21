@@ -9,24 +9,24 @@
 #include "unblind.h"
 
 int main(int argc, char *argv[]) {
-	print_to_log("Program start");
+    print_to_log("Program start");
 
-	FILE *f;
-	char *file_name;
-	WINDOW *win = (WINDOW *) malloc(sizeof(WINDOW *));
+    FILE *f;
+    char *file_name;
+    WINDOW *win = (WINDOW *) malloc(sizeof(WINDOW *));
 
-	unblind_info_t *info = (unblind_info_t *) malloc(INFO_SIZE);
-	setup_unblind_info(info);
+    unblind_info_t *info = (unblind_info_t *) malloc(INFO_SIZE);
+    setup_unblind_info(info);
 
-	print_to_log("info created");
+    print_to_log("info created");
 
-	WINDOW *main = initscr();
+    WINDOW *main_win = initscr();
     win = newwin(MAX_LINES, MAX_CHARS_PER_LINE, 0, 0);
-	noecho();
-	nodelay(stdscr, TRUE);
-	keypad(stdscr, FALSE);
-	scrollok(win, FALSE);
-	raw();
+    noecho();
+    nodelay(stdscr, TRUE);
+    keypad(stdscr, FALSE);
+    scrollok(win, FALSE);
+    raw();
 
     if(argc == 2) {
         file_name = argv[1];
@@ -37,20 +37,20 @@ int main(int argc, char *argv[]) {
             exit(1);
         }
     } else {
-        fprintf(stderr, "Error: ./unblind <file name>");
         endwin();
+        fprintf(stderr, "Error: ./unblind <file name>\n");
         exit(1);
     }
 
     read_contents_from_file(f, win, info);
-	print_to_log("right before draw\n");
-	draw(win, info);
-	print_to_log("Starting main loop\n");
+    print_to_log("right before draw\n");
+    draw(win, info);
+    print_to_log("Starting main loop\n");
     for(;;) {
-		print_to_log("Main loop start\n");
+        print_to_log("Main loop start\n");
         manage_input(file_name, win, info);
     }
-	fclose(f);
+    fclose(f);
     endwin();
-	return 0;
+    return 0;
 }
