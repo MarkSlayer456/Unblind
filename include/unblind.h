@@ -11,6 +11,11 @@
 #define PROTECTED_LINES 	3
 #define SCROLL_THRESHOLD	6
 
+
+#define PAGE_MOD		1200
+#define PAGE_UP			PAGE_MOD + 53
+#define PAGE_DOWN		PAGE_MOD + 54			
+
 #define ARROW_KEY_MOD	1000
 #define DOWN_ARROW		ARROW_KEY_MOD + 66
 #define UP_ARROW		ARROW_KEY_MOD + 65

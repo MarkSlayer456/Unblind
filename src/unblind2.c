@@ -168,21 +168,49 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 	if(c == EOF) {
 		return; // DON'T REDRAW SCREEN
 	}
-
+	strcpy(info->message, keyname(c));	
+	
 	int x;
 	x = c;
+
+	
+	/* 
+	* This code looks messy it just handles ctrl arrow keys and special keys like page up and page down
+	* since ncurses doesn't have a way to check for ctrl arrow keys this has to be done in order to detect them.
+	* this makes detecting other keys more difficult, also some systems send different key combos for the same keys
+	* so that makes it worse
+	*/
 	if(c == 27) {
 		c = getch();
 		if(c == 91) { // is not a ctrl arrow key
 			c = getch();
-			x = ARROW_KEY_MOD + c;
+			if(c == 53 || c == 54) {
+				x = PAGE_MOD + c;
+				c = getch();
+			} else {	
+				if(c == 49) {
+					getch();
+					getch();
+					c = getch();
+					x = CTRL_ARROW_KEY_MOD + c;
+				} else {
+					x = ARROW_KEY_MOD + c;
+				}
+			}
 		} else if(c == 79) { // is a ctrl arrow key
 			c = getch();
 			x = CTRL_ARROW_KEY_MOD + c;
 		}
 	}
-
+	/////////////////////////////////////////////////////////////////////////////////////////////
+	
 	switch(x) {
+		case PAGE_UP:
+			strcpy(info->message, "page up!");
+			break;
+		case PAGE_DOWN:
+			strcpy(info->message, "page down!");
+			break;
 		case CTRL_DOWN_ARROW:
 			for(int i = info->cy; i < MAX_LINES; i++) {
 				if(info->contents[i][0] == '\0') {
@@ -284,7 +312,6 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			type_char(c, info, 1);
 			break;
 	}
-
 	draw(win, info);
 }
 
