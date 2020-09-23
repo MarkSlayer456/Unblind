@@ -11,6 +11,11 @@
 int main(int argc, char *argv[]) {
     print_to_log("Program start");
 
+	MAX_LINES = 4192;
+	MAX_CHARS_PER_LINE = 300;
+	INFO_SIZE = MAX_LINES * MAX_CHARS_PER_LINE * 2;
+	WINDOW_HEIGHT = LINES_PER_WINDOW*2;
+
     FILE *f;
     char *file_name;
     WINDOW *win = (WINDOW *) malloc(sizeof(WINDOW *));

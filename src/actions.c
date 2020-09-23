@@ -15,33 +15,31 @@ void move_cursor_up(WINDOW *win, unblind_info_t *info) {
 	 if(!(info->cy-1 <= -1)) {
 		info->cy--;
 		info->wcy--;
-		if(current_character(info) == TAB_KEY) {
-				info->cx++;
-				while(current_character(info) == TAB_KEY) {
-					info->cx++;
-				}
-		} else if(info->cx > strlen(current_line(info))-1) {
-			info->cx = strlen(current_line(info))-1;
-		} else if(current_line(info)[0] == '\n') {
-			info->cx = 0;
-		}
-		unblind_scroll_check(win, info);
-	}
+        while(current_character(info) == TAB_KEY) {
+            info->cx++;
+            info->wcx++;
+        }
+    } else if(info->cx > strlen(current_line(info))-1) {
+        info->cx = strlen(current_line(info))-1;
+        info->wcx = strlen(current_line(info))-1;
+    } else if(current_line(info)[0] == '\n') {
+        info->cx = 0;
+        info->wcx = 0;
+    }
+    unblind_scroll_check(win, info);
 	update_cursor_pos(win, info);
 }
 
 void move_cursor_down(WINDOW *win, unblind_info_t *info) {
-	if(current_character(info) == TAB_KEY) {
+	if(info->contents[info->cy+1][info->cx] == TAB_KEY) {
 		info->cy++;
 		info->wcy++;
 		while(current_character(info) == '\0') {
 			move_cursor_left(win, info);
 		}
-		//info->cx++;
-		//info->cy++;
-		//info->wcy++;
 		while(current_character(info) == TAB_KEY) {
 			info->cx++;
+            info->wcx++;
 		}
 	} else if(info->cx <= strlen(next_line(info)) && info->contents[info->cy+1][0] != '\0') {
 		info->cy++;
@@ -50,6 +48,7 @@ void move_cursor_down(WINDOW *win, unblind_info_t *info) {
 		info->cy++;
 		info->wcy++;
 		info->cx = strlen(current_line(info))-1;
+		info->wcx = strlen(current_line(info))-1;
 	}
 	unblind_scroll_check(win, info);
 	update_cursor_pos(win, info);
@@ -57,19 +56,28 @@ void move_cursor_down(WINDOW *win, unblind_info_t *info) {
 
 void move_cursor_left(WINDOW *win, unblind_info_t *info) {
 	if(info->contents[info->cy][info->cx-1] == TAB_KEY) {
-		info->cx -= 4;
-		if(info->cx == 0) {
-			move_cursor_up(win, info);
+        info->cx--;
+        info->wcx--;
+        if(info->cx == 0) {
+            move_cursor_up(win, info);
+        }
+		while(current_character(info) == TAB_KEY) {
+			info->cx--;
+            info->wcx--;
+            if(info->cx == 0) {
+                move_cursor_up(win, info);
+            }
 		}
-				//current_line(info)[info->cx-1] &&
-	} else if(info->cx-1 != -1) {
+	} else if(info->wcx-1 != -1) {
+		info->wcx--;
 		info->cx--;
-	} else if(info->cx-1 == -1 && !(info->cy-1 <= -1)) {
+	} else if(info->wcx-1 == -1 && !(info->cy-1 <= -1)) {
 		--info->cy;
+		info->wcx = strlen(current_line(info))-1;
 		info->cx = strlen(current_line(info))-1;
 		info->wcy--;
 	}
-	if(info->cx == 0) {
+	if(info->wcx == 0) {
 		unblind_scroll_check(win, info);
 	}
 	update_cursor_pos(win, info);
@@ -77,24 +85,32 @@ void move_cursor_left(WINDOW *win, unblind_info_t *info) {
 
 void move_cursor_right(WINDOW *win, unblind_info_t *info) {
 	if(current_character(info) == TAB_KEY) {
-		info->cx += 4;
+		while(current_character(info) == TAB_KEY) {
+			info->cx++;
+            info->wcx++;
+		}
 	} else if(current_character(info) != '\n' && current_character(info) != '\0') {
 		info->cx++;
+		info->wcx++;
 	} else if((next_line(info)[0] || next_line(info)[0] == '\n') && !(info->cy+1 >= MAX_LINES)) {
 		info->cx = 0;
+		info->wcx = 0;
 		info->cy++;
 		info->wcy++;
 		unblind_scroll_check(win, info);
 		if(current_character(info) == TAB_KEY) {
 			info->cx++;
+			info->wcx++;
 			while(current_character(info) == TAB_KEY) {
 				info->cx++;
+				info->wcx++;
 			}
 		}
 	}
 	update_cursor_pos(win, info);
 }
 
+//TODO find str and find next str still need wcx implemented
 /**
 * Finds a word and moves the cursor to the first occurence of the word
 * to get the next word recall the function
@@ -192,8 +208,10 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		info->cy--;
 		int len = strlen(current_line(info));
 		info->cx = len;
+		info->wcx = len;
 		del = current_character(info);
 		info->cx--;
+		info->wcx--;
 		mvwdelch(win, info->cy, info->cx);
 		info->contents[info->cy][info->cx] = '\0';
 		strcat(info->contents[info->cy], info->contents[info->cy+1]);
@@ -227,11 +245,13 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		if(prev_character(info) == 9) {
 			for(int i = 0; i < 4; i++) {
 				info->cx--;
+				info->wcx--;
 				del = current_character(info);
 				move_to_left(info->contents[info->cy], info->cx);
 			}
 		} else {
 			info->cx--;
+			info->wcx--;
 			del = current_character(info);
 			move_to_left(info->contents[info->cy], info->cx);
 			update_cursor_pos(win, info);
@@ -259,7 +279,7 @@ void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 	//int y = info->cy;
 	char c = '\n';
 	if(strlen(current_line(info)) == 0) {
-		array_insert(info->contents[info->cy], info->cx, c);
+		array_insert(info->contents[info->cy], info->cx, c, MAX_CHARS_PER_LINE);
 		info->cy++;
 	} else {
 		//char partition[MAX_CHARS_PER_LINE] = "";
@@ -276,6 +296,7 @@ void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		info->contents[info->cy][new_length+1] = '\0';
 		info->cy++;
 		info->cx = 0;
+		info->wcx = 0;
 		for(int k = MAX_LINES-1; k > info->cy; k--) {
 			if(info->contents[k-1] == NULL) {
 				//info->contents[k] = NULL;
@@ -311,25 +332,26 @@ void type_char(char c, unblind_info_t *info, int add_to_ur_manager) {
 	int y = info->cy;
 	if(c != EOF) {
         if(!iscntrl(c)) { //TODO this if doesn't work
-			array_insert(info->contents[info->cy], info->cx, c);
+			array_insert(info->contents[info->cy], info->cx, c, MAX_CHARS_PER_LINE);
 			info->cx++;
+			info->wcx++;
 			// auto completion for ()'s and such
         	switch(c) {
         		case '(':
-        			array_insert(info->contents[info->cy], info->cx, ')');
+        			array_insert(info->contents[info->cy], info->cx, ')', MAX_CHARS_PER_LINE);
         			break;
         		case '[':
-        			array_insert(info->contents[info->cy], info->cx, ']');
+        			array_insert(info->contents[info->cy], info->cx, ']', MAX_CHARS_PER_LINE);
         			break;
         		case '{':
-        			array_insert(info->contents[info->cy], info->cx, '}');
+        			array_insert(info->contents[info->cy], info->cx, '}', MAX_CHARS_PER_LINE);
         			break;
         		case '\'':
         		case '\"':
-        			array_insert(info->contents[info->cy], info->cx, c);
+        			array_insert(info->contents[info->cy], info->cx, c, MAX_CHARS_PER_LINE);
 	       			break;
         		case '<':
-        			array_insert(info->contents[info->cy], info->cx, '>');
+        			array_insert(info->contents[info->cy], info->cx, '>', MAX_CHARS_PER_LINE);
         			break;
         	}
         }
@@ -349,7 +371,8 @@ void tab_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
 	int x = info->cx;
 	int y = info->cy;
 	for(int i = 0; i < 4; i++) {
-		array_insert(info->contents[info->cy], info->cx++, 9);
+		array_insert(info->contents[info->cy], info->cx++, TAB_KEY, MAX_CHARS_PER_LINE);
+		info->wcx++;
 	}
 	if(add_to_ur_manager) {
 		ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
@@ -429,6 +452,7 @@ void undo_last_backspace(WINDOW *win, unblind_info_t *info, char *c, int x, int 
 	info->cx = x;
 	info->cy = y;
 	info->wcy = y;
+	info->wcx = x;
 	linked_list_d_pop(info->ur_manager->stack_u);
 }
 
@@ -455,6 +479,7 @@ void undo_tab(WINDOW *win, unblind_info_t *info, int x, int y) {
 	while(i < TAB_SIZE) {
 		move_to_left(info->contents[y], x);
 		info->cx = x;
+		info->wcx = x;
 		while(y != info->cy) {
 			if(info->wcy < y) {
 				info->cy++;
