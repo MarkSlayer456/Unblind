@@ -40,6 +40,8 @@ void linked_list_d_add(d_linked_list_t *dll, void *value, int x, int y);
 dll_node_t *linked_list_d_get(d_linked_list_t *dll, int i);
 dll_node_t *linked_list_d_pop(d_linked_list_t *dll);
 
+void linked_list_d_free(d_linked_list_t *dll, dll_node_t *node);
+
 void setup_unblind_ur_manager(undo_redo_manager_t *ur_manager);
 
 

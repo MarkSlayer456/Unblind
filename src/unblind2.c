@@ -122,9 +122,9 @@ void write_contents_to_file(char *file_name, unblind_info_t *info) {
 
 void update_cursor_pos(WINDOW *win, unblind_info_t *info) {
 	print_to_log("updating cursor pos...");
-    mvprintw(LINES-1, COLS - 13, "pos: %d, %d ", info->wcx, info->wcy);
-    mvprintw(LINES-1, COLS - 26, "char: ----");
-    mvprintw(LINES-1, COLS - 26, "char: %c", info->contents[info->cy][info->cx]);
+    mvprintw(LINES-1, COLS - 18, "pos: %d, %d ", info->cx, info->cy);
+    mvprintw(LINES-1, COLS - 31, "char: ----");
+    mvprintw(LINES-1, COLS - 31, "char: %c", info->contents[info->cy][info->cx]);
     move(info->wcy, info->wcx);
 	refresh();
 	print_to_log("done updating cursor pos...");
@@ -138,16 +138,18 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 		if(c == ENTER_KEY) {
 			find_str(win, info);
 			info->m = EDIT;
-			memset(info->fstr, 0, sizeof(char) * MAX_CHARS_PER_LINE);
+			memset(info->fstr, 0, sizeof(char) * FIND_STR_MAX_LENGTH);
 		} else if(c == BACKSPACE_KEY_0 || c == BACKSPACE_KEY_1 || c == BACKSPACE_KEY_2) {
 			info->fstr[strlen(info->fstr)-1] = '\0';
 			info->wcx--;
+            info->cx--;
 			strcpy(info->message, info->fstr);
 			draw(win, info);
 		} else if((c >= 'A' && c <= 'z')) {
-			if(strlen(info->fstr)+1 == sizeof(char) * MAX_CHARS_PER_LINE) return; // this is very long shouldn't need to be any bigger
+			if(strlen(info->fstr)+1 == sizeof(char) * FIND_STR_MAX_LENGTH) return; // this is very long shouldn't need to be any bigger
 			info->fstr[strlen(info->fstr)] = c;
 			info->wcx++;
+            info->cx++;
 			strcpy(info->message, info->fstr);
 			draw(win, info);
 		}
@@ -200,22 +202,10 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			strcpy(info->message, "page down!");
 			break;
 		case CTRL_DOWN_ARROW:
-			for(int i = info->cy; i < MAX_LINES; i++) {
-				if(info->contents[i][0] == '\0') {
-					break;
-				}
-				move_cursor_down(win, info);
-			}
-			info->cx = strlen(info->contents[info->cy])-1;
+            jump_to_end(win, info);
 			break;
 		case CTRL_UP_ARROW:
-			for(int i = info->cy; i != 0; i--) {
-				if(info->contents[i] == NULL) {
-					break;
-				}
-				move_cursor_up(win, info);
-			}
-			info->cx = strlen(info->contents[info->cy])-1;
+            jump_to_start(win, info);
 			break;
 		case CTRL_RIGHT_ARROW:
 			for(int i = 0; i < (strlen(info->contents[info->cy]) - 1) - info->cx;) {
@@ -244,8 +234,8 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			break;
 		case CTRL_F:
 			info->m = FIND;
-			memset(info->fstr, 0, sizeof(char) * MAX_CHARS_PER_LINE);
-			memset(info->message, 0, MAX_CHARS_PER_LINE * sizeof(char));
+			memset(info->fstr, 0, sizeof(char) * FIND_STR_MAX_LENGTH);
+			memset(info->message, 0, MAX_MESSAGE_LENGTH * sizeof(char));
 			break;
 		case CTRL_P:
 			next_find_str(win, info);
@@ -419,11 +409,11 @@ void setup_unblind_info(unblind_info_t *info) {
 	info->ur_manager = (undo_redo_manager_t *) malloc(sizeof(undo_redo_manager_t));
 	setup_unblind_ur_manager(info->ur_manager);
 
-	info->message = (char *)malloc(MAX_CHARS_PER_LINE * sizeof(char));
-	memset(info->message, 0, MAX_CHARS_PER_LINE * sizeof(char));
+	info->message = (char *)malloc(MAX_MESSAGE_LENGTH * sizeof(char));
+	memset(info->message, 0, MAX_MESSAGE_LENGTH * sizeof(char));
 	info->find = (d_linked_list_t *)malloc(sizeof(d_linked_list_t));
-	info->fstr = (char *)malloc(sizeof(char) * MAX_CHARS_PER_LINE);
-	memset(info->fstr, 0, sizeof(char) * MAX_CHARS_PER_LINE);
+	info->fstr = (char *)malloc(sizeof(char) * FIND_STR_MAX_LENGTH);
+	memset(info->fstr, 0, sizeof(char) * FIND_STR_MAX_LENGTH);
 	info->contents = (char **)malloc(MAX_LINES * sizeof(char *));
 	for(int i = 0; i < MAX_LINES; i++) {
 		info->contents[i] = (char *)malloc(MAX_CHARS_PER_LINE * sizeof(char));
@@ -432,14 +422,24 @@ void setup_unblind_info(unblind_info_t *info) {
 }
 
 void unblind_info_free(unblind_info_t *info) {
-	for(int i = 0; i < MAX_LINES; i++) {
-		free(info->contents[i]);
+	
+    linked_list_d_free(info->ur_manager->stack_u, info->ur_manager->stack_u->head);
+    linked_list_d_free(info->ur_manager->stack_r, info->ur_manager->stack_r->head);
+    free(info->ur_manager);
+    
+	free(info->message);
+    
+    linked_list_d_free(info->find, info->find->head);
+    free(info->find);
+    
+	free(info->fstr);
+    
+    for(int i = 0; i < MAX_LINES-1; i++) {
+        if(info->contents[i])
+            free(info->contents[i]);
 	}
 	free(info->contents);
-	free(info->message);
-	free(info->fstr);
-	free(info->find);
-	free(info->ur_manager);
+    
 	free(info);
 }
 

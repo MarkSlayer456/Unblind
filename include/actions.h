@@ -4,6 +4,9 @@
 
 #define TAB_SIZE 4
 
+void jump_to_start(WINDOW *win, unblind_info_t *info);
+void jump_to_end(WINDOW *win, unblind_info_t *info);
+
 void move_cursor_up(WINDOW *win, unblind_info_t *info);
 void move_cursor_down(WINDOW *win, unblind_info_t *info);
 void move_cursor_left(WINDOW *win, unblind_info_t *info);

@@ -76,6 +76,18 @@ dll_node_t *linked_list_d_get(d_linked_list_t *dll, int i) {
 	return tmp;
 }
 
+/*
+ * Head must be passed in as the node for this to work
+ */
+void linked_list_d_free(d_linked_list_t *dll, dll_node_t *node) {
+    if(node == NULL) {
+        return;
+    }
+    if(node->next != NULL) linked_list_d_free(dll, node->next);
+    free(node);
+}
+
+
 void setup_unblind_ur_manager(undo_redo_manager_t *ur_manager) {
 	ur_manager->stack_u = linked_list_d_create();
 	ur_manager->stack_r = linked_list_d_create();

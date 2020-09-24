@@ -4,9 +4,6 @@
 
 #include "double_linked_list.h"
 
-#define MAX_LINES 4192
-#define MAX_CHARS_PER_LINE 300
-#define INFO_SIZE MAX_LINES * MAX_CHARS_PER_LINE * 2
 #define LINES_PER_WINDOW 	36
 #define PROTECTED_LINES 	3
 #define SCROLL_THRESHOLD	6
@@ -41,7 +38,13 @@
 #define CTRL_P			16
 #define CTRL_F			6
 
+#define FIND_STR_MAX_LENGTH 300
+#define MAX_MESSAGE_LENGTH 300
 
+int MAX_LINES;
+int MAX_CHARS_PER_LINE;
+int INFO_SIZE;
+int WINDOW_HEIGHT;
 
 typedef enum {
 	FIND = 1,
@@ -77,6 +80,8 @@ void reset_unblind_info_contents(unblind_info_t *info);
 void unblind_scroll_down(WINDOW *win, unblind_info_t *info);
 void unblind_scroll_up(WINDOW *win, unblind_info_t *info);
 
+void enlarge_lines_unblind_info(unblind_info_t *info);
+void enlarge_characters_unblind_info(unblind_info_t *info);
 void setup_unblind_info(unblind_info_t *info);
 void unblind_info_free(unblind_info_t *info);
 
@@ -85,7 +90,7 @@ void shutdown();
 void update_cursor_pos(WINDOW *win, unblind_info_t *info);
 
 void print_to_log(const char *error);
-int array_insert(char *a, int x, char c);
+int array_insert(char *a, int x, char c, int size);
 void move_to_left(char *arr, int left);
 void shift_up(WINDOW *win, unblind_info_t *info);
 void shift_down(WINDOW *win, unblind_info_t *info);

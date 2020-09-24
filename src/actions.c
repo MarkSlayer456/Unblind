@@ -11,6 +11,33 @@
 
 //TODO find command doesn't move the cursor to the message area
 
+void jump_to_start(WINDOW *win, unblind_info_t *info) {
+    info->scroll_offset = 0;
+    info->wcy = 0;
+    info->cy = 0;
+    info->cx = 0;
+    info->wcx = 0;
+    update_cursor_pos(win, info);
+}
+
+void jump_to_end(WINDOW *win, unblind_info_t *info) {
+    int i = 0;
+    for(; i < MAX_LINES; i++) {
+        if(info->contents[i][0] == '\0') break;
+    }
+    i--;
+    int scrollPos_y = i-(LINES_PER_WINDOW-7);
+    if(i <= LINES_PER_WINDOW-7) 
+        info->scroll_offset = 0;
+    else
+        info->scroll_offset = scrollPos_y;
+    info->cy = i;
+    info->wcy = LINES_PER_WINDOW-7;
+    info->cx = 0; //TODO set this to the end of the line once scrolling right and left are setup
+    info->wcx = 0;
+    update_cursor_pos(win, info);
+}
+
 void move_cursor_up(WINDOW *win, unblind_info_t *info) {
 	 if(!(info->cy-1 <= -1)) {
 		info->cy--;
@@ -19,7 +46,8 @@ void move_cursor_up(WINDOW *win, unblind_info_t *info) {
             info->cx++;
             info->wcx++;
         }
-    } else if(info->cx > strlen(current_line(info))-1) {
+    }
+    if(info->cx > strlen(current_line(info))-1) {
         info->cx = strlen(current_line(info))-1;
         info->wcx = strlen(current_line(info))-1;
     } else if(current_line(info)[0] == '\n') {
@@ -110,7 +138,6 @@ void move_cursor_right(WINDOW *win, unblind_info_t *info) {
 	update_cursor_pos(win, info);
 }
 
-//TODO find str and find next str still need wcx implemented
 /**
 * Finds a word and moves the cursor to the first occurence of the word
 * to get the next word recall the function
@@ -140,8 +167,14 @@ void find_str(WINDOW *win, unblind_info_t *info) {
 		return;
 	}
 	while(info->cx != tmp->x) {
-		if(tmp->x > info->cx) info->cx++;
-		if(tmp->x < info->cx) info->cx--;
+		if(tmp->x > info->cx) {
+            info->cx++;
+            info->wcx++;
+        }
+		if(tmp->x < info->cx) {
+            info->cx--;
+            info->wcx--;
+        }
 		unblind_scroll_check(win, info);
 	}
 	//info->cx = tmp->x;
@@ -176,8 +209,14 @@ void next_find_str(WINDOW *win, unblind_info_t *info) {
 		return;
 	}
 	while(info->cx != tmp->x) {
-		if(tmp->x > info->cx) info->cx++;
-		if(tmp->x < info->cx) info->cx--;
+		if(tmp->x > info->cx) {
+            info->cx++;
+            info->wcx++;
+        }
+		if(tmp->x < info->cx) {
+            info->cx--;
+            info->wcx--;
+        }
 		unblind_scroll_check(win, info);
 	}
 	//info->cx = tmp->x;
