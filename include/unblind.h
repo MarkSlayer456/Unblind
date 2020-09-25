@@ -4,10 +4,11 @@
 
 #include "double_linked_list.h"
 
-#define LINES_PER_WINDOW 	36
-#define PROTECTED_LINES 	3
-#define SCROLL_THRESHOLD	6
-
+#define LINES_PER_WINDOW 	          36
+#define CHARS_PER_LINE_PER_WINDOW     90
+#define PROTECTED_LINES 	          3
+#define SCROLL_THRESHOLD	          (int)LINES_PER_WINDOW/6
+#define SCROLLX_THRESHOLD	          (int)CHARS_PER_LINE_PER_WINDOW/10
 
 #define PAGE_MOD		1200
 #define PAGE_UP			PAGE_MOD + 53
@@ -60,6 +61,7 @@ typedef struct unblind_info {
 	int cx;
 	int cy;
 	int scroll_offset;
+    int scrollX_offset;
 	int wcx;
 	int wcy;
 	char **contents;
@@ -77,6 +79,8 @@ void delete_line(WINDOW *win, unblind_info_t *info);
 void draw(WINDOW *win, unblind_info_t *info);
 void reset_unblind_info_contents(unblind_info_t *info);
 
+void unblind_scroll_left(WINDOW *win, unblind_info_t *info);
+void unblind_scroll_right(WINDOW *win, unblind_info_t *info);
 void unblind_scroll_down(WINDOW *win, unblind_info_t *info);
 void unblind_scroll_up(WINDOW *win, unblind_info_t *info);
 
@@ -96,6 +100,8 @@ void shift_up(WINDOW *win, unblind_info_t *info);
 void shift_down(WINDOW *win, unblind_info_t *info);
 void duplicate_line(WINDOW *win, unblind_info_t *info);
 void unblind_scroll_check(WINDOW *win, unblind_info_t *info);
+
+void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info);
 
 // these functions will
 // be moved to another file at a later date

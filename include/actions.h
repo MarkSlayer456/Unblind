@@ -19,7 +19,7 @@ void next_find_str(WINDOW *win, unblind_info_t *info);
 void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager);
 void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager);
 void save_file(char *file_name, unblind_info_t *info);
-void type_char(char c, unblind_info_t *info, int add_to_ur_manager);
+void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager);
 void tab_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager);
 
 char current_character(unblind_info_t *info);

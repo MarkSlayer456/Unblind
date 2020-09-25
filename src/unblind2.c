@@ -16,7 +16,27 @@ void unblind_scroll_check(WINDOW *win, unblind_info_t *info) {
 	} else if(LINES_PER_WINDOW - SCROLL_THRESHOLD <= info->wcy && info->contents[info->wcy-1][0] != '\0'
 				&& !(info->cy-1 >= MAX_LINES)) {
 		unblind_scroll_down(win, info);
-	}
+	} else if(CHARS_PER_LINE_PER_WINDOW - SCROLLX_THRESHOLD <= info->wcx) {
+        unblind_scroll_right(win, info);
+    } else if(SCROLLX_THRESHOLD == info->wcx && info->scrollX_offset > 0) {
+        unblind_scroll_left(win, info);
+    }
+}
+
+
+void unblind_scroll_left(WINDOW *win, unblind_info_t *info) {
+    info->wcx++;
+    info->scrollX_offset--;
+    update_cursor_pos(win, info);
+    draw(win, info);
+}
+
+
+void unblind_scroll_right(WINDOW *win, unblind_info_t *info) {
+    info->wcx--;
+    info->scrollX_offset++;
+    update_cursor_pos(win, info);
+    draw(win, info);
 }
 
 void unblind_scroll_down(WINDOW *win, unblind_info_t *info) {
@@ -33,6 +53,30 @@ void unblind_scroll_up(WINDOW *win, unblind_info_t *info) {
 	draw(win, info);
 }
 
+/** TODO
+ * different types of this function are spread throughout this program
+ * needs to be more versatile
+ *  ideas:
+ *  - add end location as a parameter
+ * */
+void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info) {
+    int j = strlen(current_line(info))-1;
+    int scrollPos_x = j-(CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1);
+    
+    if(j <= CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1) 
+        info->scrollX_offset = 0;
+    else
+        info->scrollX_offset = scrollPos_x;
+    
+    if(j - 11 > CHARS_PER_LINE_PER_WINDOW) {
+        info->wcx = CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1;
+    } else {
+        info->wcx = j;
+    }
+    update_cursor_pos(win, info);
+}
+
+
 void draw(WINDOW *win, unblind_info_t *info) {
 	if(!info->contents) return;
 	werase(win); //this was causing errors with the windows ubuntu system
@@ -40,7 +84,8 @@ void draw(WINDOW *win, unblind_info_t *info) {
 	for(int i = info->scroll_offset; i < info->scroll_offset + WINDOW_HEIGHT; i++) {
 		y = i - info->scroll_offset;
 		int x = 0;
-		for(int j = 0; j <= strlen(info->contents[i]); j++) {
+		for(int j = info->scrollX_offset; j <= strlen(info->contents[i]); j++) {
+            x = j-info->scrollX_offset;
 			if(info->contents[i][j] != '\0') {
 				// bottom two lines are used for messages and other things
 				if(y <= LINES-PROTECTED_LINES) {
@@ -287,7 +332,7 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			//linked_list_d_pop(info->ur_manager->stack_u);
 			break;
 		default:
-			type_char(c, info, 1);
+			type_char(win, c, info, 1);
 			break;
 	}
 	draw(win, info);
@@ -307,9 +352,11 @@ void delete_line(WINDOW *win, unblind_info_t *info) {
 		info->contents[info->cy][0] = '\n';
 		info->contents[info->cy][1] = '\0';
 		info->cx = 0;
+        unblind_scroll_hor_calc(win, info);
 	} else if(info->contents[info->cy + 1][0] == '\0') {
 		info->cy--;
 		info->wcy--;
+        unblind_scroll_hor_calc(win, info);
 		unblind_scroll_check(win, info);
 	}
 }
@@ -347,6 +394,7 @@ void shift_down(WINDOW *win, unblind_info_t *info) {
 
 int array_insert(char *a, int x, char c, int size) {
 	char *par = malloc(sizeof(char) * size);
+    memset(par, 0, sizeof(char) * size);
 	int j = 0;
 	for(int i = x; i < strlen(a); i++) {
 		par[j] = a[i];
@@ -355,6 +403,7 @@ int array_insert(char *a, int x, char c, int size) {
 	a[x] = c;
 	a[x+1] = '\0';
 	strcat(a, par);
+    free(par);
 	if(a[x] != '\0') return 1;
 	return 0;
 }
@@ -362,6 +411,10 @@ int array_insert(char *a, int x, char c, int size) {
 void print_to_log(const char *error) {
 	//TODO remove this file later, kind of annoying
     FILE *fedit = fopen(".unblind_log.txt", "w+");
+        if(fedit == NULL) {
+            fprintf(stderr, "Error: log file not found\n");
+            return;
+        }
 		if(strlen(error)) {
 			fputs(error, fedit);
 		} else if(error[0] == '\n') {
@@ -405,6 +458,7 @@ void setup_unblind_info(unblind_info_t *info) {
 	info->wcy = 0;
 	info->wcx = 0;
 	info->scroll_offset = 0;
+    info->scrollX_offset = 0;
 
 	info->ur_manager = (undo_redo_manager_t *) malloc(sizeof(undo_redo_manager_t));
 	setup_unblind_ur_manager(info->ur_manager);
