@@ -79,8 +79,8 @@ void delete_line(WINDOW *win, unblind_info_t *info);
 void draw(WINDOW *win, unblind_info_t *info);
 void reset_unblind_info_contents(unblind_info_t *info);
 
-void unblind_scroll_left(WINDOW *win, unblind_info_t *info);
-void unblind_scroll_right(WINDOW *win, unblind_info_t *info);
+// void unblind_scroll_left(WINDOW *win, unblind_info_t *info);
+// void unblind_scroll_right(WINDOW *win, unblind_info_t *info);
 void unblind_scroll_down(WINDOW *win, unblind_info_t *info);
 void unblind_scroll_up(WINDOW *win, unblind_info_t *info);
 
@@ -89,7 +89,7 @@ void enlarge_characters_unblind_info(unblind_info_t *info);
 void setup_unblind_info(unblind_info_t *info);
 void unblind_info_free(unblind_info_t *info);
 
-void shutdown();
+void shutdown(WINDOW *win, unblind_info_t *info);
 
 void update_cursor_pos(WINDOW *win, unblind_info_t *info);
 

@@ -16,27 +16,7 @@ void unblind_scroll_check(WINDOW *win, unblind_info_t *info) {
 	} else if(LINES_PER_WINDOW - SCROLL_THRESHOLD <= info->wcy && info->contents[info->wcy-1][0] != '\0'
 				&& !(info->cy-1 >= MAX_LINES)) {
 		unblind_scroll_down(win, info);
-	} else if(CHARS_PER_LINE_PER_WINDOW - SCROLLX_THRESHOLD <= info->wcx) {
-        unblind_scroll_right(win, info);
-    } else if(SCROLLX_THRESHOLD == info->wcx && info->scrollX_offset > 0) {
-        unblind_scroll_left(win, info);
-    }
-}
-
-
-void unblind_scroll_left(WINDOW *win, unblind_info_t *info) {
-    info->wcx++;
-    info->scrollX_offset--;
-    update_cursor_pos(win, info);
-    draw(win, info);
-}
-
-
-void unblind_scroll_right(WINDOW *win, unblind_info_t *info) {
-    info->wcx--;
-    info->scrollX_offset++;
-    update_cursor_pos(win, info);
-    draw(win, info);
+	}
 }
 
 void unblind_scroll_down(WINDOW *win, unblind_info_t *info) {
@@ -59,19 +39,29 @@ void unblind_scroll_up(WINDOW *win, unblind_info_t *info) {
  *  ideas:
  *  - add end location as a parameter
  * */
+// void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info) {
+//     int j = strlen(current_line(info))-1;
+//     int scrollPos_x = j-(CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1);
+//     
+//     if(j <= CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1) 
+//         info->scrollX_offset = 0;
+//     else
+//         info->scrollX_offset = scrollPos_x;
+//     
+//     if(j - 11 > CHARS_PER_LINE_PER_WINDOW) {
+//         info->wcx = CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1;
+//     } else {
+//         info->wcx = j;
+//     }
+//     update_cursor_pos(win, info);
+// }
+
 void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info) {
-    int j = strlen(current_line(info))-1;
-    int scrollPos_x = j-(CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1);
-    
-    if(j <= CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1) 
-        info->scrollX_offset = 0;
-    else
-        info->scrollX_offset = scrollPos_x;
-    
-    if(j - 11 > CHARS_PER_LINE_PER_WINDOW) {
-        info->wcx = CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1;
+    info->wcx = info->cx % CHARS_PER_LINE_PER_WINDOW;
+    if(info->cx - CHARS_PER_LINE_PER_WINDOW > 0) {
+        info->scrollX_offset = info->cx-info->wcx;
     } else {
-        info->wcx = j;
+        info->scrollX_offset = 0;
     }
     update_cursor_pos(win, info);
 }
@@ -128,13 +118,13 @@ void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
 	}
 	
     fclose(f);
+    free(str);
     for(int k = 0; k < MAX_LINES-1; k++) {
-        if(info->contents[k][0] == '\0') break;
         for(int l = 0; l < MAX_CHARS_PER_LINE-1; l++) {
             if(info->contents[k][l] == '\0') break;
             if(info->contents[k][l] == TAB_KEY) {
-                for(int o = 0; o < 4; o++) {
-                    array_insert(info->contents[k], l, TAB_KEY, MAX_CHARS_PER_LINE);
+                for(int o = 0; o < 3; o++) {
+                    array_insert(info->contents[k], l, TAB_KEY, MAX_CHARS_PER_LINE-1);
 					l++;
 				}
             }
@@ -205,8 +195,7 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 	}
 	strcpy(info->message, keyname(c));	
 	
-	int x;
-	x = c;
+	int x = c;
 
 	
 	/* 
@@ -256,14 +245,16 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			for(int i = 0; i < (strlen(info->contents[info->cy]) - 1) - info->cx;) {
 				move_cursor_right(win, info);
 			}
+			unblind_scroll_hor_calc(win, info);
 			break;
 		case CTRL_LEFT_ARROW:
 			for(int i = 0; i < info->cx;) {
-				if(info->contents[info->cy][info->cx-1] == TAB_KEY) {
+				if(info->contents[info->cy][info->cx-1] == TAB_KEY || info->cx == 0) {
 					break;
 				}
 				move_cursor_left(win, info);
 			}
+			unblind_scroll_hor_calc(win, info);
 			break;
 		case DOWN_ARROW: // down arrow
 			move_cursor_down(win, info);
@@ -286,7 +277,7 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			next_find_str(win, info);
 			break;
 		case CTRL_Q: // ctrl-q
-			shutdown(info);
+			shutdown(win, info);
 			break;
 		case CTRL_S: // ctrl-s
 			save_file(file_name, info);
@@ -393,16 +384,23 @@ void shift_down(WINDOW *win, unblind_info_t *info) {
 
 
 int array_insert(char *a, int x, char c, int size) {
+    if(a == NULL) return 0;
 	char *par = malloc(sizeof(char) * size);
     memset(par, 0, sizeof(char) * size);
 	int j = 0;
-	for(int i = x; i < strlen(a); i++) {
-		par[j] = a[i];
+    int found = 0;
+	for(int i = 0; i < size-1; i++) {
+        if(i == x) {
+            par[j] = c;
+            found = 1;
+        } else if(found) {
+            par[j] = a[i-1];
+        } else {
+            par[j] = a[i];
+        }
 		j++;
 	}
-	a[x] = c;
-	a[x+1] = '\0';
-	strcat(a, par);
+	memcpy(a, par, size);
     free(par);
 	if(a[x] != '\0') return 1;
 	return 0;
@@ -459,6 +457,7 @@ void setup_unblind_info(unblind_info_t *info) {
 	info->wcx = 0;
 	info->scroll_offset = 0;
     info->scrollX_offset = 0;
+    info->m = EDIT;
 
 	info->ur_manager = (undo_redo_manager_t *) malloc(sizeof(undo_redo_manager_t));
 	setup_unblind_ur_manager(info->ur_manager);
@@ -479,6 +478,8 @@ void unblind_info_free(unblind_info_t *info) {
 	
     linked_list_d_free(info->ur_manager->stack_u, info->ur_manager->stack_u->head);
     linked_list_d_free(info->ur_manager->stack_r, info->ur_manager->stack_r->head);
+    free(info->ur_manager->stack_u);
+    free(info->ur_manager->stack_r);
     free(info->ur_manager);
     
 	free(info->message);
@@ -488,7 +489,7 @@ void unblind_info_free(unblind_info_t *info) {
     
 	free(info->fstr);
     
-    for(int i = 0; i < MAX_LINES-1; i++) {
+    for(int i = 0; i < MAX_LINES; i++) {
         if(info->contents[i])
             free(info->contents[i]);
 	}
@@ -497,8 +498,8 @@ void unblind_info_free(unblind_info_t *info) {
 	free(info);
 }
 
-void shutdown(unblind_info_t *info) {
+void shutdown(WINDOW *win, unblind_info_t *info) {
 	endwin();
 	unblind_info_free(info);
-	exit(0);
+    exit(0);
 }

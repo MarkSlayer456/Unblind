@@ -28,20 +28,8 @@ void jump_to_end(WINDOW *win, unblind_info_t *info) {
         if(info->contents[i][0] == '\0') break;
     }
     i--;
-    int j = strlen(info->contents[i])-1;
-    int scrollPos_y = i-(LINES_PER_WINDOW-7);
-    int scrollPos_x = j-(CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1);
-    if(j <= CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1) 
-        info->scrollX_offset = 0;
-    else
-        info->scrollX_offset = scrollPos_x;
     
-    info->cx = j;
-    if(j- 11 > CHARS_PER_LINE_PER_WINDOW) {
-        info->wcx = CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1;
-    } else {
-        info->wcx = j;
-    }
+    int scrollPos_y = i-(LINES_PER_WINDOW-7);
     
     if(i <= LINES_PER_WINDOW-7) 
         info->scroll_offset = 0;
@@ -54,6 +42,8 @@ void jump_to_end(WINDOW *win, unblind_info_t *info) {
         info->wcy = i;
     }
     
+    info->cx = strlen(info->contents[info->cy])-1;
+    unblind_scroll_hor_calc(win, info);
     
     update_cursor_pos(win, info);
 }
@@ -75,6 +65,7 @@ void move_cursor_up(WINDOW *win, unblind_info_t *info) {
         info->cx = 0;
         info->wcx = 0;
     }
+    unblind_scroll_hor_calc(win, info);
     unblind_scroll_check(win, info);
 	update_cursor_pos(win, info);
 }
@@ -106,58 +97,44 @@ void move_cursor_down(WINDOW *win, unblind_info_t *info) {
 void move_cursor_left(WINDOW *win, unblind_info_t *info) {
 	if(info->contents[info->cy][info->cx-1] == TAB_KEY) {
         info->cx--;
-        info->wcx--;
         if(info->cx == 0) {
             move_cursor_up(win, info);
         }
 		while(current_character(info) == TAB_KEY) {
 			info->cx--;
-            info->wcx--;
             if(info->cx == 0) {
                 move_cursor_up(win, info);
             }
 		}
-	} else if(info->wcx-1 != -1) {
-		info->wcx--;
+	} else if(info->cx-1 != -1) {
 		info->cx--;
-	} else if(info->wcx-1 == -1 && !(info->cy-1 <= -1)) {
+	} else if(info->cx-1 == -1 && !(info->cy-1 <= -1)) {
 		--info->cy;
-		info->wcx = strlen(current_line(info))-1;
 		info->cx = strlen(current_line(info))-1;
 		info->wcy--;
-        unblind_scroll_hor_calc(win, info);
 	}
-	unblind_scroll_check(win, info);
-	update_cursor_pos(win, info);
 }
 
 void move_cursor_right(WINDOW *win, unblind_info_t *info) {
 	if(current_character(info) == TAB_KEY) {
 		while(current_character(info) == TAB_KEY) {
 			info->cx++;
-            info->wcx++;
 		}
 	} else if(current_character(info) != '\n' && current_character(info) != '\0') {
 		info->cx++;
-		info->wcx++;
 	} else if((next_line(info)[0] || next_line(info)[0] == '\n') && !(info->cy+1 >= MAX_LINES)) {
 		info->cx = 0;
-		info->wcx = 0;
         info->scrollX_offset = 0;
 		info->cy++;
 		info->wcy++;
 		unblind_scroll_check(win, info);
 		if(current_character(info) == TAB_KEY) {
 			info->cx++;
-			info->wcx++;
 			while(current_character(info) == TAB_KEY) {
 				info->cx++;
-				info->wcx++;
 			}
 		}
 	}
-	unblind_scroll_check(win, info);
-	update_cursor_pos(win, info);
 }
 
 /**
@@ -241,10 +218,8 @@ void next_find_str(WINDOW *win, unblind_info_t *info) {
 	while(info->cx != tmp->x) {
 		if(tmp->x > info->cx) {
             info->cx++;
-            info->wcx++;
         } else if(tmp->x < info->cx) {
             info->cx--;
-            info->wcx--;
         }
 		unblind_scroll_check(win, info);
 	}
@@ -352,22 +327,10 @@ void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		info->contents[info->cy][new_length+1] = '\0';
 		info->cy++;
         
-        int i = strlen(info->contents[info->cy])-1;
-        int scrollPos_x = i-(CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1);
-        if(i <= CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1) 
-            info->scrollX_offset = 0;
-        else
-            info->scrollX_offset = scrollPos_x;
-        
-        info->cx = j;
-        if(j- 11 > CHARS_PER_LINE_PER_WINDOW) {
-            info->wcx = CHARS_PER_LINE_PER_WINDOW-SCROLLX_THRESHOLD+1;
-        } else {
-            info->wcx = j;
-        }
-        
-		info->cx = 0;
+        info->cx = 0;
 		info->wcx = 0;
+        unblind_scroll_hor_calc(win, info);
+		
 		for(int k = MAX_LINES-1; k > info->cy; k--) {
 			if(info->contents[k-1] == NULL) {
 				//info->contents[k] = NULL;

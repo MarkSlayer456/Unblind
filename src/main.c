@@ -18,14 +18,14 @@ int main(int argc, char *argv[]) {
 
     FILE *f;
     char *file_name;
-    WINDOW *win = (WINDOW *) malloc(sizeof(WINDOW *));
+    WINDOW *win;
 
     unblind_info_t *info = (unblind_info_t *) malloc(INFO_SIZE);
     setup_unblind_info(info);
 
     print_to_log("info created");
 
-    WINDOW *main_win = initscr();
+    initscr();
     win = newwin(MAX_LINES, MAX_CHARS_PER_LINE, 0, 0);
     noecho();
     nodelay(stdscr, TRUE);
@@ -57,5 +57,6 @@ int main(int argc, char *argv[]) {
     }
     fclose(f);
     endwin();
+    exit(0);
     return 0;
 }
