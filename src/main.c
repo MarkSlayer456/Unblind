@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     initscr();
     win = newwin(MAX_LINES, MAX_CHARS_PER_LINE, 0, 0);
     noecho();
-    nodelay(stdscr, TRUE);
+    nodelay(stdscr, FALSE);
     keypad(stdscr, FALSE);
     scrollok(win, FALSE);
     raw();
@@ -52,8 +52,9 @@ int main(int argc, char *argv[]) {
     draw(win, info);
     print_to_log("Starting main loop\n");
     for(;;) {
-        print_to_log("Main loop start\n");
+//         print_to_log("Main loop start\n");
         manage_input(file_name, win, info);
+        draw(win, info);
     }
     fclose(f);
     endwin();

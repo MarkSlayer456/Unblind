@@ -9,15 +9,13 @@
 #include "unblind.h"
 #include "actions.h"
 
-//TODO find command doesn't move the cursor to the message area
-
 void jump_to_start(WINDOW *win, unblind_info_t *info) {
-    info->scroll_offset = 0;
-    info->scrollX_offset = 0;
     info->wcy = 0;
     info->cy = 0;
     info->cx = 0;
     info->wcx = 0;
+    unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_vert_calc(win, info);
     update_cursor_pos(win, info);
 }
 
@@ -28,22 +26,10 @@ void jump_to_end(WINDOW *win, unblind_info_t *info) {
         if(info->contents[i][0] == '\0') break;
     }
     i--;
-    
-    int scrollPos_y = i-(LINES_PER_WINDOW-7);
-    
-    if(i <= LINES_PER_WINDOW-7) 
-        info->scroll_offset = 0;
-    else
-        info->scroll_offset = scrollPos_y;
     info->cy = i;
-    if(i-7 > LINES_PER_WINDOW) {
-        info->wcy = LINES_PER_WINDOW-7;
-    } else {
-        info->wcy = i;
-    }
-    
-    info->cx = strlen(info->contents[info->cy])-1;
-    unblind_scroll_hor_calc(win, info);
+    info->cx = strlen(info->contents[info->cy])-2;
+    unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_vert_calc(win, info);
     
     update_cursor_pos(win, info);
 }
@@ -52,7 +38,6 @@ void move_cursor_up(WINDOW *win, unblind_info_t *info) {
 	 if(!(info->cy-1 <= -1)) {
 		info->cy--;
 		info->wcy--;
-//         unblind_scroll_hor_calc(win, info);
         while(current_character(info) == TAB_KEY) {
             info->cx++;
             info->wcx++;
@@ -65,8 +50,8 @@ void move_cursor_up(WINDOW *win, unblind_info_t *info) {
         info->cx = 0;
         info->wcx = 0;
     }
-    unblind_scroll_hor_calc(win, info);
-    unblind_scroll_check(win, info);
+    unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_vert_calc(win, info);
 	update_cursor_pos(win, info);
 }
 
@@ -90,11 +75,13 @@ void move_cursor_down(WINDOW *win, unblind_info_t *info) {
 		info->cx = strlen(current_line(info))-1;
 		info->wcx = strlen(current_line(info))-1;
 	}
-	unblind_scroll_check(win, info);
+	unblind_scroll_hor_calc(win, info, 0);
+	unblind_scroll_vert_calc(win, info);
 	update_cursor_pos(win, info);
 }
 
 void move_cursor_left(WINDOW *win, unblind_info_t *info) {
+    int nat = 1;
 	if(info->contents[info->cy][info->cx-1] == TAB_KEY) {
         info->cx--;
         if(info->cx == 0) {
@@ -110,12 +97,15 @@ void move_cursor_left(WINDOW *win, unblind_info_t *info) {
 		info->cx--;
 	} else if(info->cx-1 == -1 && !(info->cy-1 <= -1)) {
 		--info->cy;
-		info->cx = strlen(current_line(info))-1;
+		info->cx = strlen(current_line(info));
 		info->wcy--;
+        nat = 0;
 	}
+	unblind_scroll_hor_calc(win, info, nat);
 }
 
 void move_cursor_right(WINDOW *win, unblind_info_t *info) {
+    int nat = 1;
 	if(current_character(info) == TAB_KEY) {
 		while(current_character(info) == TAB_KEY) {
 			info->cx++;
@@ -127,14 +117,15 @@ void move_cursor_right(WINDOW *win, unblind_info_t *info) {
         info->scrollX_offset = 0;
 		info->cy++;
 		info->wcy++;
-		unblind_scroll_check(win, info);
 		if(current_character(info) == TAB_KEY) {
 			info->cx++;
 			while(current_character(info) == TAB_KEY) {
 				info->cx++;
 			}
 		}
+		nat = 0;
 	}
+	unblind_scroll_hor_calc(win, info, nat);
 }
 
 /**
@@ -145,50 +136,31 @@ void find_str(WINDOW *win, unblind_info_t *info) {
 	info->find = linked_list_d_create();
 	// strcpy(str, info->fstr);
 	int state = 0;
-	for(int j = 0; info->contents[j][0] != '\0'; j++) {
-		for(int i = 0; i < strlen(info->contents[j]); i++) {
+	for(int j = 0; j < MAX_LINES-1; j++) {
+		for(int i = 0; i < MAX_CHARS_PER_LINE; i++) {
+            if(info->contents[j][i] == '\0') break;
 			if(info->fstr[state] == info->contents[j][i]) {
 				state++;
 			} else {
 				state = 0;
 			}
 			if(state == strlen(info->fstr)) {
-				// info->value = (void *) str;
 				linked_list_d_add(info->find, (void *) info->fstr, (i+1)-strlen(info->fstr), j);
 				state = 0;
 			}
 
 		}
 	}
+	print_to_log("getting node info");
 	dll_node_t *tmp = linked_list_d_get(info->find, info->find->curr);
 	if(tmp == NULL) {
 		strcpy(info->message, "No results found!");
 		return;
 	}
-	while(info->cy != tmp->y) {
-		if(tmp->y > info->cy) {
-			info->cy++;
-			info->wcy++;
-	 	}
-		if(tmp->y < info->cy) {
-			info->cy--;
-			info->wcy--;
-	 	}
-		unblind_scroll_check(win, info);
-	}
-	while(info->cx != tmp->x) {
-		if(tmp->x > info->cx) {
-            info->cx++;
-            info->wcx++;
-        } else if(tmp->x < info->cx) {
-            info->cx--;
-            info->wcx--;
-        }
-		unblind_scroll_check(win, info);
-	}
-    update_cursor_pos(win, info);
-	unblind_scroll_check(win, info);
-	update_cursor_pos(win, info);
+	info->cx = tmp->x;
+    info->cy = tmp->y;
+	unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_vert_calc(win, info);
 }
 
 void next_find_str(WINDOW *win, unblind_info_t *info) {
@@ -202,38 +174,16 @@ void next_find_str(WINDOW *win, unblind_info_t *info) {
 		strcpy(info->message, "No results found!");
 		return;
 	}
-	//info->cx = tmp->x;
-	while(info->cy != tmp->y) {
-		if(tmp->y > info->cy) {
-			info->cy++;
-			info->wcy++;
-	 	}
-		if(tmp->y < info->cy) {
-			info->cy--;
-			info->wcy--;
-	 	}
-		unblind_scroll_check(win, info);
-	}
-	
-	while(info->cx != tmp->x) {
-		if(tmp->x > info->cx) {
-            info->cx++;
-        } else if(tmp->x < info->cx) {
-            info->cx--;
-        }
-		unblind_scroll_check(win, info);
-	}
-	
-	unblind_scroll_check(win, info);
+	info->cx = tmp->x;
+    info->cy = tmp->y;
+	unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_vert_calc(win, info);
 }
 
 void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
 	if(info->cx <= 0 && info->cy <= 0) return;
 	char del;
 	if(info->cx <= 0 && info->cy > 0) {
-		if(info->cy == 0) {
-			unblind_scroll_up(win, info);
-		}
 		info->cy--;
 		int len = strlen(current_line(info));
 		info->cx = len;
@@ -258,11 +208,9 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 
 		if(info->wcy <= 6 && info->scroll_offset > 0) {
 			info->wcy++;
-			unblind_scroll_up(win, info);
 		}
 		info->cy--;
 		info->wcy--;
-        unblind_scroll_hor_calc(win, info);
 		if(add_to_ur_manager) {
 			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
 			char *del1 = &del;
@@ -271,7 +219,7 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 			node->action = BACKSPACE_LAST_CHAR;
 			linked_list_d_add(info->ur_manager->stack_u, (void *) node, info->cx, info->cy);
 		}
-		unblind_scroll_check(win, info);
+		
 	} else {
 		if(prev_character(info) == 9) {
 			for(int i = 0; i < 4; i++) {
@@ -296,8 +244,8 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 			linked_list_d_add(info->ur_manager->stack_u, (void *) node, info->cx, info->cy);
 		}
 	}
-     unblind_scroll_check(win, info);
-
+	unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_vert_calc(win, info);
 	// char *del1 = &del;
 	// char *del2 = (char *) malloc(sizeof(char));
 	// del2 = strdup(del1);
@@ -306,8 +254,6 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 }
 
 void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
-	//int x = info->cx;
-	//int y = info->cy;
 	char c = '\n';
 	if(strlen(current_line(info)) == 0) {
 		array_insert(info->contents[info->cy], info->cx, c, MAX_CHARS_PER_LINE);
@@ -328,8 +274,7 @@ void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		info->cy++;
         
         info->cx = 0;
-		info->wcx = 0;
-        unblind_scroll_hor_calc(win, info);
+        unblind_scroll_hor_calc(win, info, 0);
 		
 		for(int k = MAX_LINES-1; k > info->cy; k--) {
 			if(info->contents[k-1] == NULL) {
@@ -343,8 +288,7 @@ void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		strcpy(info->contents[info->cy], partition);
 		free(partition);
 	}
-	unblind_scroll_check(win, info);
-	info->wcy++;
+	unblind_scroll_vert_calc(win, info);
 	update_cursor_pos(win, info);
 	if(add_to_ur_manager == 1) {
 		ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
@@ -368,21 +312,21 @@ void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager)
         if(!iscntrl(c)) { //TODO this if doesn't work
             switch(c) {
                 case ')':
-                    if(next_character(info) == ')') {
+                    if(current_character(info) == ')') {
                         info->cx++;
                         info->wcx++;
                         return;
                     }
                     break;
                 case ']':
-                    if(next_character(info) == ']') {
+                    if(current_character(info) == ']') {
                         info->cx++;
                         info->wcx++;
                         return;
                     }
                     break;
                 case '>':
-                    if(next_character(info) == '>') {
+                    if(current_character(info) == '>') {
                         info->cx++;
                         info->wcx++;
                         return;
@@ -390,14 +334,14 @@ void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager)
                     break;
                 case '\'':
         		case '\"':
-                    if(next_character(info) == '\'' || next_character(info) == '\"') {
+                    if(current_character(info) == '\'' || current_character(info) == '\"') {
                         info->cx++;
                         info->wcx++;
                         return;
                     }
                     break;
                 case '}':
-                    if(next_character(info) == '}') {
+                    if(current_character(info) == '}') {
                         info->cx++;
                         info->wcx++;
                         return;
@@ -407,7 +351,7 @@ void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager)
 			array_insert(info->contents[info->cy], info->cx, c, MAX_CHARS_PER_LINE);
 			info->cx++;
 			info->wcx++;
-            unblind_scroll_check(win, info);
+            unblind_scroll_hor_calc(win, info, 1);
 			// auto completion for ()'s and such
         	switch(c) {
         		case '(':
@@ -447,7 +391,7 @@ void tab_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
 	for(int i = 0; i < 4; i++) {
 		array_insert(info->contents[info->cy], info->cx++, TAB_KEY, MAX_CHARS_PER_LINE);
 		info->wcx++;
-        unblind_scroll_hor_calc(win, info);
+        unblind_scroll_hor_calc(win, info, 1);
 	}
 	if(add_to_ur_manager) {
 		ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
@@ -484,18 +428,9 @@ char *prev_line(unblind_info_t *info) {
 void undo_type_char(WINDOW *win, unblind_info_t *info, int x, int y) {
 	move_to_left(info->contents[y], x);
 	info->cx = x;
-	while(y != info->cy) {
-		if(info->wcy < y) {
-			info->cy++;
-			info->wcy++;
-            unblind_scroll_hor_calc(win, info);
-	 	} else if(info->cy > y) {
-			info->cy--;
-			info->wcy--;
-            unblind_scroll_hor_calc(win, info);
-	 	}
-		unblind_scroll_check(win, info);
-	}
+    info->cy = y;
+	unblind_scroll_hor_calc(win, info, 1);
+    unblind_scroll_vert_calc(win, info);
 	linked_list_d_pop(info->ur_manager->stack_u);
 }
 
@@ -506,14 +441,13 @@ void undo_backspace(WINDOW *win, unblind_info_t *info, char *c, int x, int y) {
 		if(info->wcy < y) {
 			info->cy++;
 			info->wcy++;
-            unblind_scroll_hor_calc(win, info);
 	 	} else if(info->cy > y) {
 			info->cy--;
 			info->wcy--;
-            unblind_scroll_hor_calc(win, info);
 	 	}
-		unblind_scroll_check(win, info);
 	}
+	unblind_scroll_vert_calc(win, info);
+    unblind_scroll_hor_calc(win, info, 1);
 	if(*c == TAB_KEY) {
 		tab_action(win, info, 0);
 		strcpy(info->message, "TAB"); //TODO remove constant	
@@ -532,7 +466,7 @@ void undo_last_backspace(WINDOW *win, unblind_info_t *info, char *c, int x, int 
 	info->cy = y;
 	info->wcy = y;
 	info->wcx = x;
-    unblind_scroll_hor_calc(win, info);
+    unblind_scroll_hor_calc(win, info, 0);
 	linked_list_d_pop(info->ur_manager->stack_u);
 }
 
@@ -541,17 +475,15 @@ void undo_enter(WINDOW *win, unblind_info_t *info, int y) {
 		if(info->wcy < y) {
 			info->cy++;
 			info->wcy++;
-            unblind_scroll_hor_calc(win, info);
 	 	} else if(info->cy > y) {
 			info->cy--;
 			info->wcy--;
-            unblind_scroll_hor_calc(win, info);
 	 	}
-		unblind_scroll_check(win, info);
 	}
+	unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_vert_calc(win, info);
 	info->cx = 0;
 	info->wcx = 0;
-	unblind_scroll_check(win, info);
 	backspace_action(win, info, 0);
 	linked_list_d_pop(info->ur_manager->stack_u);
 }
@@ -566,14 +498,13 @@ void undo_tab(WINDOW *win, unblind_info_t *info, int x, int y) {
 			if(info->wcy < y) {
 				info->cy++;
 				info->wcy++;
-                unblind_scroll_hor_calc(win, info);
 		 	} else if(info->cy > y) {
 				info->cy--;
 				info->wcy--;
-                unblind_scroll_hor_calc(win, info);
 		 	}
-			unblind_scroll_check(win, info);
 		}
+		unblind_scroll_hor_calc(win, info, 1);
+        unblind_scroll_vert_calc(win, info);
 		i++;
 	}
 	linked_list_d_pop(info->ur_manager->stack_u);

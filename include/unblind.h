@@ -7,8 +7,8 @@
 #define LINES_PER_WINDOW 	          36
 #define CHARS_PER_LINE_PER_WINDOW     90
 #define PROTECTED_LINES 	          3
-#define SCROLL_THRESHOLD	          (int)LINES_PER_WINDOW/6
-#define SCROLLX_THRESHOLD	          (int)CHARS_PER_LINE_PER_WINDOW/10
+#define SCROLL_THRESHOLD	          LINES * 0.5
+#define SCROLLX_THRESHOLD	          COLS * 0.5
 
 #define PAGE_MOD		1200
 #define PAGE_UP			PAGE_MOD + 53
@@ -81,8 +81,8 @@ void reset_unblind_info_contents(unblind_info_t *info);
 
 // void unblind_scroll_left(WINDOW *win, unblind_info_t *info);
 // void unblind_scroll_right(WINDOW *win, unblind_info_t *info);
-void unblind_scroll_down(WINDOW *win, unblind_info_t *info);
-void unblind_scroll_up(WINDOW *win, unblind_info_t *info);
+// void unblind_scroll_down(WINDOW *win, unblind_info_t *info);
+// void unblind_scroll_up(WINDOW *win, unblind_info_t *info);
 
 void enlarge_lines_unblind_info(unblind_info_t *info);
 void enlarge_characters_unblind_info(unblind_info_t *info);
@@ -99,10 +99,12 @@ void move_to_left(char *arr, int left);
 void shift_up(WINDOW *win, unblind_info_t *info);
 void shift_down(WINDOW *win, unblind_info_t *info);
 void duplicate_line(WINDOW *win, unblind_info_t *info);
-void unblind_scroll_check(WINDOW *win, unblind_info_t *info);
+// void unblind_scroll_check(WINDOW *win, unblind_info_t *info);
 
-void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info);
+void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info, int natural);
+void unblind_scroll_vert_calc(WINDOW *win, unblind_info_t *info);
 
+void unblind_move_to_message(WINDOW *win, unblind_info_t *info);
 // these functions will
 // be moved to another file at a later date
 //d_linked_list_t *linked_list_d_create();
