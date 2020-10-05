@@ -89,7 +89,8 @@ void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
         for(int l = 0; l < MAX_CHARS_PER_LINE-1; l++) {
             if(info->contents[k][l] == '\0') break;
             if(info->contents[k][l] == TAB_KEY) {
-                for(int o = 0; o < 3; o++) {
+                l++;
+                for(int o = 0; o < TAB_SIZE; o++) {
                     array_insert(info->contents[k], l, TAB_KEY, MAX_CHARS_PER_LINE-1);
 					l++;
 				}
@@ -110,8 +111,8 @@ void write_contents_to_file(char *file_name, unblind_info_t *info) {
 				continue;
 			}
 			char c = info->contents[i][j];
-			if(c == 9) {
-				j += 3;
+			if(c == TAB_KEY) {
+				j += TAB_SIZE-1;
 				fputc(c, fedit);
 			} else {
 				fputc(c, fedit);

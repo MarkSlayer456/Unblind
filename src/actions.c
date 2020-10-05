@@ -87,44 +87,49 @@ void move_cursor_left(WINDOW *win, unblind_info_t *info) {
         if(info->cx == 0) {
             move_cursor_up(win, info);
         }
-		while(current_character(info) == TAB_KEY) {
-			info->cx--;
-            if(info->cx == 0) {
-                move_cursor_up(win, info);
+        if(current_character(info) == TAB_KEY) {
+            info->cx-=TAB_SIZE;
+            if(info->cx < 0) {
+                info->cy--;
+                info->cx = strlen(info->contents[info->cy])-1;
             }
-		}
+        }
+// 		while(current_character(info) == TAB_KEY) {
+// 			info->cx--;
+//             if(info->cx == 0) {
+//                 move_cursor_up(win, info);
+//             }
+// 		}
 	} else if(info->cx-1 != -1) {
 		info->cx--;
 	} else if(info->cx-1 == -1 && !(info->cy-1 <= -1)) {
 		--info->cy;
-		info->cx = strlen(current_line(info));
+		info->cx = strlen(current_line(info))-1;
 		info->wcy--;
         nat = 0;
 	}
+	unblind_scroll_vert_calc(win, info);
 	unblind_scroll_hor_calc(win, info, nat);
 }
 
 void move_cursor_right(WINDOW *win, unblind_info_t *info) {
     int nat = 1;
 	if(current_character(info) == TAB_KEY) {
-		while(current_character(info) == TAB_KEY) {
-			info->cx++;
-		}
+        info->cx++;
+        if((info->cx) == 0)  {
+            info->cx += TAB_SIZE+1;
+        } else {
+            info->cx+=TAB_SIZE;
+        }
 	} else if(current_character(info) != '\n' && current_character(info) != '\0') {
 		info->cx++;
-	} else if((next_line(info)[0] || next_line(info)[0] == '\n') && !(info->cy+1 >= MAX_LINES)) {
-		info->cx = 0;
-        info->scrollX_offset = 0;
+	} else if(next_line(info)) {
 		info->cy++;
 		info->wcy++;
-		if(current_character(info) == TAB_KEY) {
-			info->cx++;
-			while(current_character(info) == TAB_KEY) {
-				info->cx++;
-			}
-		}
+        info->cx = strlen(info->contents[info->cy])-1;
 		nat = 0;
 	}
+	unblind_scroll_vert_calc(win, info);
 	unblind_scroll_hor_calc(win, info, nat);
 }
 
@@ -221,8 +226,8 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		}
 		
 	} else {
-		if(prev_character(info) == 9) {
-			for(int i = 0; i < 4; i++) {
+		if(prev_character(info) == TAB_KEY) {
+			for(int i = 0; i < 5; i++) {
 				info->cx--;
 				info->wcx--;
 				del = current_character(info);
@@ -388,10 +393,8 @@ void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager)
 void tab_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
 	int x = info->cx;
 	int y = info->cy;
-	for(int i = 0; i < 4; i++) {
+	for(int i = 0; i < TAB_SIZE+1; i++) {
 		array_insert(info->contents[info->cy], info->cx++, TAB_KEY, MAX_CHARS_PER_LINE);
-		info->wcx++;
-        unblind_scroll_hor_calc(win, info, 1);
 	}
 	if(add_to_ur_manager) {
 		ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
@@ -399,6 +402,7 @@ void tab_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
 		node->action = TAB;
 		linked_list_d_add(info->ur_manager->stack_u, (void *) node, x, y);
 	}
+	unblind_scroll_hor_calc(win, info, 1);
 }
 
 char current_character(unblind_info_t *info) {
