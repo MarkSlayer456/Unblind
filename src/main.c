@@ -11,16 +11,16 @@
 int main(int argc, char *argv[]) {
     print_to_log("Program start");
 
-	MAX_LINES = 4192;
-	MAX_CHARS_PER_LINE = 300;
-	INFO_SIZE = MAX_LINES * MAX_CHARS_PER_LINE * 2;
+	MAX_LINES = 4096;
+	MAX_CHARS_PER_LINE = 256;
+	INFO_SIZE = MAX_LINES * MAX_CHARS_PER_LINE * 2; // TODO this can probably be a lot smaller
 	WINDOW_HEIGHT = LINES_PER_WINDOW*2;
 
     FILE *f;
     char *file_name;
     WINDOW *win;
 
-    unblind_info_t *info = (unblind_info_t *) malloc(INFO_SIZE);
+    unblind_info_t *info = (unblind_info_t *) malloc(4096); // TODO modified this should use INFO_SIZE
     setup_unblind_info(info);
 
     print_to_log("info created");

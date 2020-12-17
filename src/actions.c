@@ -27,7 +27,7 @@ void jump_to_end(WINDOW *win, unblind_info_t *info) {
     }
     i--;
     info->cy = i;
-    info->cx = strlen(info->contents[info->cy])-2;
+    info->cx = strlen(info->contents[info->cy])-1;
     unblind_scroll_hor_calc(win, info, 0);
     unblind_scroll_vert_calc(win, info);
     
@@ -56,7 +56,7 @@ void move_cursor_up(WINDOW *win, unblind_info_t *info) {
 }
 
 void move_cursor_down(WINDOW *win, unblind_info_t *info) {
-	if(info->contents[info->cy+1][info->cx] == TAB_KEY) {
+	if(next_line(info)[info->cx] == TAB_KEY) {
 		info->cy++;
 		info->wcy++;
 		while(current_character(info) == '\0') {
@@ -66,10 +66,10 @@ void move_cursor_down(WINDOW *win, unblind_info_t *info) {
 			info->cx++;
             info->wcx++;
 		}
-	} else if(info->cx <= strlen(next_line(info)) && info->contents[info->cy+1][0] != '\0') {
+	} else if(info->cx <= (strlen(next_line(info))-1) && next_line(info)[0] != '\0') {
 		info->cy++;
 		info->wcy++;
-	} else if(next_line(info)[0] != '\0') {
+	} else if(next_line(info) && next_line(info)[0] != '\0') {
 		info->cy++;
 		info->wcy++;
 		info->cx = strlen(current_line(info))-1;
@@ -123,14 +123,24 @@ void move_cursor_right(WINDOW *win, unblind_info_t *info) {
         }
 	} else if(current_character(info) != '\n' && current_character(info) != '\0') {
 		info->cx++;
-	} else if(next_line(info)) {
+	} else if(strlen(next_line(info)) > 0) {
 		info->cy++;
 		info->wcy++;
-        info->cx = strlen(info->contents[info->cy])-1;
+        info->cx = 0;
 		nat = 0;
 	}
 	unblind_scroll_vert_calc(win, info);
 	unblind_scroll_hor_calc(win, info, nat);
+}
+
+int hash_prime = 301; //TODO move this to top
+
+int hash(char *str) {
+	int sum = 0;
+	for(int i = 0; i < strlen(str); i++) {
+		sum += (str[i] * hash_prime);
+	}
+	return sum;
 }
 
 /**
@@ -138,39 +148,74 @@ void move_cursor_right(WINDOW *win, unblind_info_t *info) {
 * to get the next word recall the function
 */
 void find_str(WINDOW *win, unblind_info_t *info) {
-	info->find = linked_list_d_create();
-	// strcpy(str, info->fstr);
-	int state = 0;
-	for(int j = 0; j < MAX_LINES-1; j++) {
-		for(int i = 0; i < MAX_CHARS_PER_LINE; i++) {
-            if(info->contents[j][i] == '\0') break;
-			if(info->fstr[state] == info->contents[j][i]) {
-				state++;
-			} else {
-				state = 0;
-			}
-			if(state == strlen(info->fstr)) {
-				linked_list_d_add(info->find, (void *) info->fstr, (i+1)-strlen(info->fstr), j);
-				state = 0;
-			}
+	dll_node_t *tmp = NULL;
+	if(info->find == NULL) {
+		info->find = linked_list_d_create();
 
+		int find = hash(info->fstr);
+		int Fsize = strlen(info->fstr);
+        for(int j = 0; j < MAX_LINES; j++) {
+			// if(info->contents[j][0] == '\0') break; the for loop should should check this
+			if(Fsize == 1) {
+                for(int i = 0; i <= MAX_CHARS_PER_LINE; i++) {
+                    if(info->contents[j][i] == '\0') break;
+                    if(info->fstr[0] == info->contents[j][i]) linked_list_d_add(info->find, (void *) info->fstr, i, j);
+                }
+            } else {
+                int Jsize = strlen(info->contents[j]);
+                for(int i = 0; i <= Jsize && Jsize >= Fsize; i++) {
+                    char *newStr = malloc(sizeof(char) * Fsize+1);
+                    memset(newStr, 0, Fsize+1);
+                    strncpy(newStr, info->contents[j]+i, Fsize);
+                    int look = hash(newStr);
+                    if(look == find) {
+                        if(strcmp(newStr, info->fstr) == 0) {
+                            linked_list_d_add(info->find, (void *) info->fstr, i, j);
+                            
+                        }
+                    }
+                    free(newStr);
+                }
+            }
+		}
+		tmp = linked_list_d_get(info->find, info->find->curr);
+		if(tmp == NULL) {
+			strcpy(info->message, "No results found!");
+			return;
+		}
+	} else {
+		tmp = linked_list_d_get(info->find, info->find->curr);
+		if(tmp == NULL) {
+			info->find->curr = 0;
+			tmp = linked_list_d_get(info->find, info->find->curr);
 		}
 	}
-	print_to_log("getting node info");
+	
+	//info->find->curr--; // this is auto increased in linked_list_d_get
+
+	info->cx = tmp->x;
+    info->cy = tmp->y;
+	unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_vert_calc(win, info);
+
+	/*info->cx = tmp->x;
+    info->cy = tmp->y;
+	unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_vert_calc(win, info);*/
+    //next_find_str(win, info);
+}
+
+void next_find_str(WINDOW *win, unblind_info_t *info) {
 	dll_node_t *tmp = linked_list_d_get(info->find, info->find->curr);
 	if(tmp == NULL) {
-		strcpy(info->message, "No results found!");
+		find_str(win, info);
 		return;
 	}
 	info->cx = tmp->x;
     info->cy = tmp->y;
 	unblind_scroll_hor_calc(win, info, 0);
     unblind_scroll_vert_calc(win, info);
-}
-
-void next_find_str(WINDOW *win, unblind_info_t *info) {
-	dll_node_t *tmp = linked_list_d_get(info->find, info->find->curr);
-	if(tmp == NULL) {
+	/*if(tmp == NULL) {
 		if(info->find->head != NULL) {
 			info->find->curr = 0;
 			next_find_str(win, info);
@@ -178,11 +223,35 @@ void next_find_str(WINDOW *win, unblind_info_t *info) {
 		}
 		strcpy(info->message, "No results found!");
 		return;
+	}*/
+	int find = hash(info->fstr);
+	for(int j = tmp->y; j < MAX_LINES-1; j++) {
+		for(int i = tmp->x; i < strlen(info->contents[j]) && strlen(info->contents[j]) >= strlen(info->fstr); i++) {
+			char *newStr = malloc(sizeof(char) * strlen(info->fstr)+1);
+			strncpy(newStr, info->contents[j]+i, strlen(info->fstr));
+			newStr[strlen(info->fstr)+1] = '\0';
+			
+			int look = hash(newStr);
+			if(look == find) {
+				if(strcmp(newStr, info->fstr) == 0) {
+					linked_list_d_add(info->find, (void *) info->fstr,  i, j);
+					return;
+				}
+			}
+			free(newStr);
+		}
 	}
-	info->cx = tmp->x;
+	strcpy(info->message, "CTRL-P again to loop find!");
+	/*dll_node_t *tmp = linked_list_d_get(info->find, info->find->curr);
+	if(tmp == NULL) {
+		strcpy(info->message, "No results found!");
+		return;
+	}*/
+	
+	/*info->cx = tmp->x;
     info->cy = tmp->y;
 	unblind_scroll_hor_calc(win, info, 0);
-    unblind_scroll_vert_calc(win, info);
+    unblind_scroll_vert_calc(win, info);*/
 }
 
 void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
@@ -261,12 +330,12 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
 	char c = '\n';
 	if(strlen(current_line(info)) == 0) {
-		array_insert(info->contents[info->cy], info->cx, c, MAX_CHARS_PER_LINE);
+		array_insert(current_line(info), info->cx, c, MAX_CHARS_PER_LINE);
 		info->cy++;
 	} else {
 		//char partition[MAX_CHARS_PER_LINE] = "";
 		char *partition = (char *)malloc(MAX_CHARS_PER_LINE * sizeof(char));
-		memset(partition, 0, MAX_CHARS_PER_LINE * sizeof(char));
+		memset(partition, '\0', MAX_CHARS_PER_LINE * sizeof(char));
 
 		int j = 0;
 		for(int i = info->cx; i <= strlen(info->contents[info->cy]); i++) {
@@ -276,24 +345,27 @@ void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		int new_length = strlen(info->contents[info->cy]) - strlen(partition);
 		info->contents[info->cy][new_length] = '\n';
 		info->contents[info->cy][new_length+1] = '\0';
+		memset(info->contents[info->cy] + new_length+1, '\0', MAX_CHARS_PER_LINE - new_length);
 		info->cy++;
         
         info->cx = 0;
-        unblind_scroll_hor_calc(win, info, 0);
 		
 		for(int k = MAX_LINES-1; k > info->cy; k--) {
 			if(info->contents[k-1] == NULL) {
 				//info->contents[k] = NULL;
-				memset(info->contents[k], 0, MAX_CHARS_PER_LINE * sizeof(char));
+				memset(info->contents[k], '\0', MAX_CHARS_PER_LINE * sizeof(char));
 			} else {
 				strcpy(info->contents[k], info->contents[k-1]);
+				memset(info->contents[k] + strlen(info->contents[k])+1, '\0', MAX_CHARS_PER_LINE - strlen(info->contents[k]));
 				//info->contents[k] = strdup(info->contents[k-1]);
 			}
 		}
 		strcpy(info->contents[info->cy], partition);
+		memset(info->contents[info->cy]+strlen(info->contents[info->cy])+1, '\0', MAX_CHARS_PER_LINE - strlen(info->contents[info->cy]));
 		free(partition);
 	}
 	unblind_scroll_vert_calc(win, info);
+	unblind_scroll_hor_calc(win, info, 0);
 	update_cursor_pos(win, info);
 	if(add_to_ur_manager == 1) {
 		ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));

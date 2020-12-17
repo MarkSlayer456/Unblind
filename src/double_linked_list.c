@@ -29,16 +29,15 @@ void linked_list_d_add(d_linked_list_t *dll, void *value, int x, int y) {
 		dll->tail = new_node;
 		return;
 	}
-	dll_node_t *curr = dll->head;
-	while(curr) {
-		if(curr->next == NULL) {
-			dll->tail = new_node;
-			curr->next = new_node;
-			new_node->prev = curr;
-			new_node->next = NULL;
-			return;
-		}
-		curr = curr->next;
+	dll_node_t *curr = dll->tail;
+	if(curr->next == NULL) {
+		dll->tail = new_node;
+		curr->next = new_node;
+		new_node->prev = curr;
+		new_node->next = NULL;
+		return;
+	} else {
+		//TODO something went wrong
 	}
 }
 

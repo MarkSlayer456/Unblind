@@ -33,9 +33,9 @@ void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info, int natural) {
 
 void draw(WINDOW *win, unblind_info_t *info) {
 	if(!info->contents) return;
-	werase(win); //this was causing errors with the windows ubuntu system
+	werase(win); // this was causing errors with the windows ubuntu system
 	int y;
-	for(int i = info->scroll_offset; i < info->scroll_offset + LINES; i++) {
+	for(int i = info->scroll_offset; i <= info->scroll_offset + LINES; i++) {
 		y = i - info->scroll_offset;
 		int x = 0;
 		for(int j = info->scrollX_offset; j <= info->scrollX_offset + COLS; j++) {
@@ -52,7 +52,6 @@ void draw(WINDOW *win, unblind_info_t *info) {
             }
 		}
 	}
-	print_to_log("done drawing...");
 	wmove(win, LINES-2, 0);
 	mvprintw(LINES-2, 0, info->message);
 	wrefresh(win);
@@ -62,25 +61,30 @@ void draw(WINDOW *win, unblind_info_t *info) {
 void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
     int i = 0; // characters
     int j = 0; // lines
-	print_to_log("reading contents from file");
-	int amount_to_read = 4096;
+	int amount_to_read = MAX_CHARS_PER_LINE;
 	char *str = malloc(sizeof(char) * amount_to_read);
 	
 	while(fgets(str, amount_to_read, f) != NULL) {
 		if(j+2 >= MAX_LINES) {
         	enlarge_lines_unblind_info(info);
         }
-        if(i+amount_to_read >= MAX_CHARS_PER_LINE) {
-        	enlarge_characters_unblind_info(info);
+        
+        int sizeStr = strlen(str) + 1;
+        int sizeJ = strlen(info->contents[j]);
+        if(i % amount_to_read == 0 && sizeJ != 0) {
+            info->contents[j] = (char *) realloc(info->contents[j], i*2*sizeof(char));
+            memset(info->contents[j]+(i)/2, 0, (i)/2);
         }
-		if(str[strlen(str) - 1] == '\n') {
+		
+        if(str[strlen(str) - 1] == '\n') {
  			strcat(info->contents[j], str);
 			i = 0;
 			j++;
 		} else {
-			i += amount_to_read;
+			i += sizeStr;
 			strcat(info->contents[j], str);
 		}
+		
 	}
 	
     fclose(f);
@@ -89,9 +93,8 @@ void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
         for(int l = 0; l < MAX_CHARS_PER_LINE-1; l++) {
             if(info->contents[k][l] == '\0') break;
             if(info->contents[k][l] == TAB_KEY) {
-                l++;
                 for(int o = 0; o < TAB_SIZE; o++) {
-                    array_insert(info->contents[k], l, TAB_KEY, MAX_CHARS_PER_LINE-1);
+                    array_insert(info->contents[k], l, TAB_KEY, MAX_CHARS_PER_LINE);
 					l++;
 				}
             }
@@ -112,7 +115,7 @@ void write_contents_to_file(char *file_name, unblind_info_t *info) {
 			}
 			char c = info->contents[i][j];
 			if(c == TAB_KEY) {
-				j += TAB_SIZE-1;
+				j += TAB_SIZE;
 				fputc(c, fedit);
 			} else {
 				fputc(c, fedit);
@@ -124,9 +127,14 @@ void write_contents_to_file(char *file_name, unblind_info_t *info) {
 
 void update_cursor_pos(WINDOW *win, unblind_info_t *info) {
 	print_to_log("updating cursor pos...");
-    mvprintw(LINES-1, COLS - 18, "pos: %d, %d ", info->wcx + info->scrollX_offset, info->wcy + info->scroll_offset);
+    mvprintw(LINES-1, COLS - 18, "pos: %4d, %4d ", info->wcx + info->scrollX_offset, info->wcy + info->scroll_offset);
     mvprintw(LINES-1, COLS - 31, "char: ----");
-    mvprintw(LINES-1, COLS - 31, "char: %c", info->contents[info->cy][info->cx]);
+    if(current_character(info) == '\n') {
+    	mvprintw(LINES-1, COLS - 31, "char: \\n");
+    } else {
+    	mvprintw(LINES-1, COLS - 31, "char: %c", info->contents[info->cy][info->cx]);	
+    }
+    
     move(info->wcy, info->wcx);
 	refresh();
 	print_to_log("done updating cursor pos...");
@@ -140,10 +148,9 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 		if(c == ENTER_KEY) {
 			find_str(win, info);
 			info->m = EDIT;
-            unblind_scroll_hor_calc(win, info, 0);
-            unblind_scroll_vert_calc(win, info);
+            //unblind_scroll_hor_calc(win, info, 0);
+            //unblind_scroll_vert_calc(win, info);
             update_cursor_pos(win, info);
-			memset(info->fstr, 0, sizeof(char) * FIND_STR_MAX_LENGTH);
 		} else if(c == BACKSPACE_KEY_0 || c == BACKSPACE_KEY_1 || c == BACKSPACE_KEY_2) {
 			info->fstr[strlen(info->fstr)-1] = '\0';
             info->wcx--;
@@ -211,7 +218,7 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
             jump_to_start(win, info);
 			break;
 		case CTRL_RIGHT_ARROW:
-			info->cx = strlen(info->contents[info->cy]);
+			info->cx = strlen(info->contents[info->cy])-1;
 			unblind_scroll_hor_calc(win, info, 0);
 			break;
 		case CTRL_LEFT_ARROW:
@@ -232,13 +239,15 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			break;
 		case CTRL_F:
 			info->m = FIND;
-			memset(info->fstr, 0, sizeof(char) * FIND_STR_MAX_LENGTH);
-			memset(info->message, 0, MAX_MESSAGE_LENGTH * sizeof(char));
+			info->find = NULL;
+			memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
+			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
             unblind_move_to_message(win, info);
             draw(win, info);
 			break;
 		case CTRL_P:
-			next_find_str(win, info);
+			find_str(win, info);
+			//next_find_str(win, info);
             draw(win, info);
 			break;
 		case CTRL_Q: // ctrl-q
@@ -373,7 +382,7 @@ int array_insert(char *a, int x, char c, int size) {
 	}
 	memcpy(a, par, size);
     free(par);
-	if(a[x] != '\0') return 1;
+	if(a[x] == c) return 1;
 	return 0;
 }
 
@@ -408,23 +417,12 @@ void reset_unblind_info_contents(unblind_info_t *info) {
 	}
 }
 
-void enlarge_characters_unblind_info(unblind_info_t *info) {
-	MAX_CHARS_PER_LINE *= 2;
-	for(int i = 0; i < MAX_LINES; i++) {
-		info->contents[i] = (char *)realloc(info->contents[i], MAX_CHARS_PER_LINE * sizeof(char));
-        memset(info->contents[i]+MAX_CHARS_PER_LINE/2, 0, (MAX_CHARS_PER_LINE * sizeof(char))-MAX_CHARS_PER_LINE/2);
-	}
-	
-	
-}
-
 void enlarge_lines_unblind_info(unblind_info_t *info) {
 	MAX_LINES *= 2;
 	info->contents = (char **)realloc(info->contents, MAX_LINES * sizeof(char *));
-	for(int i = 0; i < MAX_LINES; i++) {
+	for(int i = (MAX_LINES/2); i < MAX_LINES; i++) {
 		info->contents[i] = (char *)realloc(info->contents[i], MAX_CHARS_PER_LINE * sizeof(char));
-		if(i > MAX_LINES/2) 
-			memset(info->contents[i], 0, MAX_CHARS_PER_LINE * sizeof(char));
+        memset(info->contents[i], 0, MAX_CHARS_PER_LINE * sizeof(char));
 	}
 }
 
@@ -444,7 +442,7 @@ void setup_unblind_info(unblind_info_t *info) {
 	memset(info->message, 0, MAX_MESSAGE_LENGTH * sizeof(char));
 	info->find = (d_linked_list_t *)malloc(sizeof(d_linked_list_t));
 	info->fstr = (char *)malloc(sizeof(char) * FIND_STR_MAX_LENGTH);
-	memset(info->fstr, 0, sizeof(char) * FIND_STR_MAX_LENGTH);
+	memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
 	info->contents = (char **)malloc(MAX_LINES * sizeof(char *));
 	for(int i = 0; i < MAX_LINES; i++) {
 		info->contents[i] = (char *)malloc(MAX_CHARS_PER_LINE * sizeof(char));

@@ -39,8 +39,8 @@
 #define CTRL_P			16
 #define CTRL_F			6
 
-#define FIND_STR_MAX_LENGTH 300
-#define MAX_MESSAGE_LENGTH 300
+#define FIND_STR_MAX_LENGTH  300
+#define MAX_MESSAGE_LENGTH   300
 
 int MAX_LINES;
 int MAX_CHARS_PER_LINE;

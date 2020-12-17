@@ -15,6 +15,7 @@ void move_cursor_to_message(WINDOW *win, unblind_info_t *info);
 
 void find_str(WINDOW *win, unblind_info_t *info);
 void next_find_str(WINDOW *win, unblind_info_t *info);
+int hash(char *str);
 
 void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager);
 void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager);
