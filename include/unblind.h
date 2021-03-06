@@ -57,6 +57,7 @@ typedef struct user_settings {
 	FILE *log;
 } user_settings_t;
 
+// this struct is getting pretty big
 typedef struct unblind_info {
 	int cx;
 	int cy;
@@ -65,6 +66,7 @@ typedef struct unblind_info {
 	int wcx;
 	int wcy;
 	char **contents;
+    int *size;
 	char *message;
 	d_linked_list_t *find;
 	unblind_mode_t m;
@@ -72,39 +74,31 @@ typedef struct unblind_info {
 	undo_redo_manager_t *ur_manager;
 } unblind_info_t;
 
+
+// file.c
 void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info);
 void write_contents_to_file(char *file_name, unblind_info_t *info);
-void manage_input(char *file_input, WINDOW *win, unblind_info_t *info);
+
+// actions.c
 void delete_line(WINDOW *win, unblind_info_t *info);
-void draw(WINDOW *win, unblind_info_t *info);
-void reset_unblind_info_contents(unblind_info_t *info);
+void duplicate_line(WINDOW *win, unblind_info_t *info);
 
-// void unblind_scroll_left(WINDOW *win, unblind_info_t *info);
-// void unblind_scroll_right(WINDOW *win, unblind_info_t *info);
-// void unblind_scroll_down(WINDOW *win, unblind_info_t *info);
-// void unblind_scroll_up(WINDOW *win, unblind_info_t *info);
-
-void enlarge_lines_unblind_info(unblind_info_t *info);
-void enlarge_characters_unblind_info(unblind_info_t *info);
-void setup_unblind_info(unblind_info_t *info);
-void unblind_info_free(unblind_info_t *info);
-
-void shutdown(WINDOW *win, unblind_info_t *info);
-
+// unblind.c
+void unblind_move_to_message(WINDOW *win, unblind_info_t *info);
 void update_cursor_pos(WINDOW *win, unblind_info_t *info);
+void manage_input(char *file_input, WINDOW *win, unblind_info_t *info);
+void draw(WINDOW *win, unblind_info_t *info);
 
-void print_to_log(const char *error);
+// utils.c
 int array_insert(char *a, int x, char c, int size);
-void move_to_left(char *arr, int left);
+void move_to_left(char *arr, int left, int size);
 void shift_up(WINDOW *win, unblind_info_t *info);
 void shift_down(WINDOW *win, unblind_info_t *info);
-void duplicate_line(WINDOW *win, unblind_info_t *info);
-// void unblind_scroll_check(WINDOW *win, unblind_info_t *info);
+void print_to_log(const char *error);
 
 void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info, int natural);
 void unblind_scroll_vert_calc(WINDOW *win, unblind_info_t *info);
 
-void unblind_move_to_message(WINDOW *win, unblind_info_t *info);
 // these functions will
 // be moved to another file at a later date
 //d_linked_list_t *linked_list_d_create();

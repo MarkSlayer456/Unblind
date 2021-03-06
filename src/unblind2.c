@@ -8,6 +8,7 @@
 #include "double_linked_list.h"
 #include "unblind.h"
 #include "actions.h"
+#include "mainframe.h"
 
 void unblind_scroll_vert_calc(WINDOW *win, unblind_info_t *info) {
     if(info->cy > SCROLL_THRESHOLD) {
@@ -70,12 +71,6 @@ void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
         }
         
         int sizeStr = strlen(str) + 1;
-        int sizeJ = strlen(info->contents[j]);
-        if(i % amount_to_read == 0 && sizeJ != 0) {
-            info->contents[j] = (char *) realloc(info->contents[j], i*2*sizeof(char));
-            memset(info->contents[j]+(i)/2, 0, (i)/2);
-        }
-		
         if(str[strlen(str) - 1] == '\n') {
  			strcat(info->contents[j], str);
 			i = 0;
@@ -84,17 +79,19 @@ void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
 			i += sizeStr;
 			strcat(info->contents[j], str);
 		}
+		if(strlen(info->contents[j]) + sizeStr + 1 >= info->size[j])  enlarge_characters_unblind_info(info, j);
 		
 	}
 	
     fclose(f);
     free(str);
     for(int k = 0; k < MAX_LINES-1; k++) {
-        for(int l = 0; l < MAX_CHARS_PER_LINE-1; l++) {
+        for(int l = 0; l < info->size[k]-1; l++) {
             if(info->contents[k][l] == '\0') break;
             if(info->contents[k][l] == TAB_KEY) {
                 for(int o = 0; o < TAB_SIZE; o++) {
-                    array_insert(info->contents[k], l, TAB_KEY, MAX_CHARS_PER_LINE);
+                    array_insert(info->contents[k], l, TAB_KEY, info->size[k]);
+                    if(strlen(info->contents[k])+1 >= info->size[k])  enlarge_characters_unblind_info(info, k);
 					l++;
 				}
             }
@@ -319,7 +316,7 @@ void duplicate_line(WINDOW *win, unblind_info_t *info) {
 void delete_line(WINDOW *win, unblind_info_t *info) {
 	int i = 0;
 	while(info->contents[info->cy][i]) {
-		move_to_left(info->contents[info->cy], i);
+		move_to_left(info->contents[info->cy], i, strlen(info->contents[info->cy]));
 	}
 	if(info->cy == 0 && info->contents[info->cy+1][0] == '\0') {
 		info->contents[info->cy][0] = '\n';
@@ -332,8 +329,8 @@ void delete_line(WINDOW *win, unblind_info_t *info) {
 	unblind_scroll_hor_calc(win, info, 0);
 }
 
-void move_to_left(char *arr, int left) {
-    for(int j = left; j < MAX_CHARS_PER_LINE; j++) {
+void move_to_left(char *arr, int left, int size) {
+    for(int j = left; j < size; j++) {
         arr[j] = arr[j + 1];
     }
 }
@@ -347,7 +344,7 @@ void shift_up(WINDOW *win, unblind_info_t *info) {
 			break;
 		}
 		strcpy(info->contents[i-1], info->contents[i]);
-		memset(info->contents[i], 0, MAX_CHARS_PER_LINE * sizeof(char));
+		memset(info->contents[i], 0, info->size[i] * sizeof(char));
 		//strcpy(info->contents[i], "");
 	}
 	info->cx = strlen(info->contents[info->cy])-1;
@@ -362,28 +359,17 @@ void shift_down(WINDOW *win, unblind_info_t *info) {
     unblind_scroll_vert_calc(win, info);
 }
 
-
-int array_insert(char *a, int x, char c, int size) {
+int array_insert(char *a, int x, char c, int size)
+{
     if(a == NULL) return 0;
-	char *par = malloc(sizeof(char) * size);
-    memset(par, 0, sizeof(char) * size);
-	int j = 0;
-    int found = 0;
-	for(int i = 0; i < size-1; i++) {
+    for(int i = strlen(a)+1; i >= 0; i--) {
         if(i == x) {
-            par[j] = c;
-            found = 1;
-        } else if(found) {
-            par[j] = a[i-1];
-        } else {
-            par[j] = a[i];
+            a[i] = c;
+            return 1;
         }
-		j++;
-	}
-	memcpy(a, par, size);
-    free(par);
-	if(a[x] == c) return 1;
-	return 0;
+        a[i] = a[i-1];
+    }
+    return 0;
 }
 
 void unblind_move_to_message(WINDOW *win, unblind_info_t *info) {
@@ -405,77 +391,4 @@ void print_to_log(const char *error) {
 			fputs("\n", fedit);
 		}
     fclose(fedit);
-}
-
-
-void reset_unblind_info_contents(unblind_info_t *info) {
-	for(int j = 0; j < MAX_LINES-1; j++) {
-		if(info->contents[j] == NULL) break;
-		for(int i = strlen(info->contents[j]); i < MAX_CHARS_PER_LINE; ++i) {
-			info->contents[j][i] = '\0';
-		}
-	}
-}
-
-void enlarge_lines_unblind_info(unblind_info_t *info) {
-	MAX_LINES *= 2;
-	info->contents = (char **)realloc(info->contents, MAX_LINES * sizeof(char *));
-	for(int i = (MAX_LINES/2); i < MAX_LINES; i++) {
-		info->contents[i] = (char *)realloc(info->contents[i], MAX_CHARS_PER_LINE * sizeof(char));
-        memset(info->contents[i], 0, MAX_CHARS_PER_LINE * sizeof(char));
-	}
-}
-
-void setup_unblind_info(unblind_info_t *info) {
-	info->cx = 0;
-	info->cy = 0;
-	info->wcy = 0;
-	info->wcx = 0;
-	info->scroll_offset = 0;
-    info->scrollX_offset = 0;
-    info->m = EDIT;
-
-	info->ur_manager = (undo_redo_manager_t *) malloc(sizeof(undo_redo_manager_t));
-	setup_unblind_ur_manager(info->ur_manager);
-
-	info->message = (char *)malloc(MAX_MESSAGE_LENGTH * sizeof(char));
-	memset(info->message, 0, MAX_MESSAGE_LENGTH * sizeof(char));
-	info->find = (d_linked_list_t *)malloc(sizeof(d_linked_list_t));
-	info->fstr = (char *)malloc(sizeof(char) * FIND_STR_MAX_LENGTH);
-	memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
-	info->contents = (char **)malloc(MAX_LINES * sizeof(char *));
-	for(int i = 0; i < MAX_LINES; i++) {
-		info->contents[i] = (char *)malloc(MAX_CHARS_PER_LINE * sizeof(char));
-		memset(info->contents[i], 0, MAX_CHARS_PER_LINE * sizeof(char));
-	}
-}
-
-void unblind_info_free(unblind_info_t *info) {
-	
-    linked_list_d_free(info->ur_manager->stack_u, info->ur_manager->stack_u->head);
-    linked_list_d_free(info->ur_manager->stack_r, info->ur_manager->stack_r->head);
-    free(info->ur_manager->stack_u);
-    free(info->ur_manager->stack_r);
-    free(info->ur_manager);
-    
-	free(info->message);
-    
-    linked_list_d_free(info->find, info->find->head);
-    free(info->find);
-    
-	free(info->fstr);
-    
-    for(int i = 0; i < MAX_LINES; i++) {
-        if(info->contents[i])
-            free(info->contents[i]);
-	}
-	free(info->contents);
-    
-	free(info);
-}
-
-void shutdown(WINDOW *win, unblind_info_t *info) {
-	endwin();
-	unblind_info_free(info);
-    exit(0);
 }

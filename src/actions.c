@@ -8,6 +8,7 @@
 #include "double_linked_list.h"
 #include "unblind.h"
 #include "actions.h"
+#include "mainframe.h"
 
 void jump_to_start(WINDOW *win, unblind_info_t *info) {
     info->wcy = 0;
@@ -94,12 +95,6 @@ void move_cursor_left(WINDOW *win, unblind_info_t *info) {
                 info->cx = strlen(info->contents[info->cy])-1;
             }
         }
-// 		while(current_character(info) == TAB_KEY) {
-// 			info->cx--;
-//             if(info->cx == 0) {
-//                 move_cursor_up(win, info);
-//             }
-// 		}
 	} else if(info->cx-1 != -1) {
 		info->cx--;
 	} else if(info->cx-1 == -1 && !(info->cy-1 <= -1)) {
@@ -155,9 +150,8 @@ void find_str(WINDOW *win, unblind_info_t *info) {
 		int find = hash(info->fstr);
 		int Fsize = strlen(info->fstr);
         for(int j = 0; j < MAX_LINES; j++) {
-			// if(info->contents[j][0] == '\0') break; the for loop should should check this
 			if(Fsize == 1) {
-                for(int i = 0; i <= MAX_CHARS_PER_LINE; i++) {
+                for(int i = 0; i <= info->size[j]; i++) {
                     if(info->contents[j][i] == '\0') break;
                     if(info->fstr[0] == info->contents[j][i]) linked_list_d_add(info->find, (void *) info->fstr, i, j);
                 }
@@ -190,19 +184,11 @@ void find_str(WINDOW *win, unblind_info_t *info) {
 			tmp = linked_list_d_get(info->find, info->find->curr);
 		}
 	}
-	
-	//info->find->curr--; // this is auto increased in linked_list_d_get
 
 	info->cx = tmp->x;
     info->cy = tmp->y;
 	unblind_scroll_hor_calc(win, info, 0);
     unblind_scroll_vert_calc(win, info);
-
-	/*info->cx = tmp->x;
-    info->cy = tmp->y;
-	unblind_scroll_hor_calc(win, info, 0);
-    unblind_scroll_vert_calc(win, info);*/
-    //next_find_str(win, info);
 }
 
 void next_find_str(WINDOW *win, unblind_info_t *info) {
@@ -215,15 +201,6 @@ void next_find_str(WINDOW *win, unblind_info_t *info) {
     info->cy = tmp->y;
 	unblind_scroll_hor_calc(win, info, 0);
     unblind_scroll_vert_calc(win, info);
-	/*if(tmp == NULL) {
-		if(info->find->head != NULL) {
-			info->find->curr = 0;
-			next_find_str(win, info);
-			return;
-		}
-		strcpy(info->message, "No results found!");
-		return;
-	}*/
 	int find = hash(info->fstr);
 	for(int j = tmp->y; j < MAX_LINES-1; j++) {
 		for(int i = tmp->x; i < strlen(info->contents[j]) && strlen(info->contents[j]) >= strlen(info->fstr); i++) {
@@ -242,16 +219,6 @@ void next_find_str(WINDOW *win, unblind_info_t *info) {
 		}
 	}
 	strcpy(info->message, "CTRL-P again to loop find!");
-	/*dll_node_t *tmp = linked_list_d_get(info->find, info->find->curr);
-	if(tmp == NULL) {
-		strcpy(info->message, "No results found!");
-		return;
-	}*/
-	
-	/*info->cx = tmp->x;
-    info->cy = tmp->y;
-	unblind_scroll_hor_calc(win, info, 0);
-    unblind_scroll_vert_calc(win, info);*/
 }
 
 void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
@@ -300,13 +267,13 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 				info->cx--;
 				info->wcx--;
 				del = current_character(info);
-				move_to_left(info->contents[info->cy], info->cx);
+				move_to_left(info->contents[info->cy], info->cx, strlen(info->contents[info->cy]));
 			}
 		} else {
 			info->cx--;
 			info->wcx--;
 			del = current_character(info);
-			move_to_left(info->contents[info->cy], info->cx);
+            move_to_left(info->contents[info->cy], info->cx, strlen(info->contents[info->cy]));
 			update_cursor_pos(win, info);
 		}
 		if(add_to_ur_manager) {
@@ -330,12 +297,12 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
 	char c = '\n';
 	if(strlen(current_line(info)) == 0) {
-		array_insert(current_line(info), info->cx, c, MAX_CHARS_PER_LINE);
+        array_insert(current_line(info), info->cx, c, info->size[info->cy]);
+        if(strlen(info->contents[info->cy])+1 >= info->size[info->cy])  enlarge_characters_unblind_info(info, info->cy);
 		info->cy++;
 	} else {
-		//char partition[MAX_CHARS_PER_LINE] = "";
-		char *partition = (char *)malloc(MAX_CHARS_PER_LINE * sizeof(char));
-		memset(partition, '\0', MAX_CHARS_PER_LINE * sizeof(char));
+        char *partition = (char *)malloc(info->size[info->cy] * sizeof(char));
+        memset(partition, '\0', info->size[info->cy] * sizeof(char));
 
 		int j = 0;
 		for(int i = info->cx; i <= strlen(info->contents[info->cy]); i++) {
@@ -345,29 +312,59 @@ void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		int new_length = strlen(info->contents[info->cy]) - strlen(partition);
 		info->contents[info->cy][new_length] = '\n';
 		info->contents[info->cy][new_length+1] = '\0';
-		memset(info->contents[info->cy] + new_length+1, '\0', MAX_CHARS_PER_LINE - new_length);
-		info->cy++;
+		
+		int store = info->size[info->cy];
+		
+        info->size[info->cy] = MAX_CHARS_PER_LINE; // reset size
+        while(info->size[info->cy] < new_length) info->size[info->cy] *= 2; // find apporiate size
         
+        info->contents[info->cy] = (char *)realloc(info->contents[info->cy], info->size[info->cy] * sizeof(char));
+		
+        memset(info->contents[info->cy] + new_length + 2, '\0', info->size[info->cy] - new_length - 2);
+		
+        info->cy++;
         info->cx = 0;
 		
 		for(int k = MAX_LINES-1; k > info->cy; k--) {
-			if(info->contents[k-1] == NULL) {
-				//info->contents[k] = NULL;
-				memset(info->contents[k], '\0', MAX_CHARS_PER_LINE * sizeof(char));
+            if(info->contents[k-1] == NULL) {
+                memset(info->contents[k], '\0', info->size[k] * sizeof(char));
 			} else {
-				strcpy(info->contents[k], info->contents[k-1]);
-				memset(info->contents[k] + strlen(info->contents[k])+1, '\0', MAX_CHARS_PER_LINE - strlen(info->contents[k]));
-				//info->contents[k] = strdup(info->contents[k-1]);
+                // this code is here because each line has it's own size so 
+                // if you modify the size you need to realloc the size and this handles that
+                char *par1 = (char *)malloc(info->size[k-1] * sizeof(char));
+				
+                // store line above
+                strcpy(par1, info->contents[k-1]);
+                
+                
+                // change line below to size of line above
+                info->size[k] = info->size[k-1];
+                
+                info->contents[k] = realloc(info->contents[k], info->size[k] * sizeof(char));
+                
+                strncpy(info->contents[k], par1, info->size[k]);
+                
+                int len = strlen(info->contents[k]);
+                memset(info->contents[k] + len+1, '\0', info->size[k] - len - 1);
+                
+                free(par1);
 			}
 		}
+		info->size[info->cy] = store;
+        info->contents[info->cy] = realloc(info->contents[info->cy], info->size[info->cy] * sizeof(char));
 		strcpy(info->contents[info->cy], partition);
-		memset(info->contents[info->cy]+strlen(info->contents[info->cy])+1, '\0', MAX_CHARS_PER_LINE - strlen(info->contents[info->cy]));
+        int len = strlen(info->contents[info->cy]);
+        memset(info->contents[info->cy] + len + 1, '\0', info->size[info->cy] - len - 1);
 		free(partition);
 	}
+	
+	if(info->contents[MAX_LINES-1][0] != '\0') enlarge_lines_unblind_info(info);
+    
 	unblind_scroll_vert_calc(win, info);
 	unblind_scroll_hor_calc(win, info, 0);
 	update_cursor_pos(win, info);
-	if(add_to_ur_manager == 1) {
+	
+    if(add_to_ur_manager == 1) {
 		ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
 		node->c = " "; // won't be used
 		node->action = ENTER;
@@ -425,30 +422,32 @@ void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager)
                     }
                     break;
             }
-			array_insert(info->contents[info->cy], info->cx, c, MAX_CHARS_PER_LINE);
+            array_insert(info->contents[info->cy], info->cx, c, info->size[info->cy]);
+            if(strlen(info->contents[info->cy])+1 >= info->size[info->cy])  enlarge_characters_unblind_info(info, info->cy);
 			info->cx++;
 			info->wcx++;
             unblind_scroll_hor_calc(win, info, 1);
 			// auto completion for ()'s and such
         	switch(c) {
         		case '(':
-        			array_insert(info->contents[info->cy], info->cx, ')', MAX_CHARS_PER_LINE);
+                    array_insert(info->contents[info->cy], info->cx, ')', info->size[info->cy]);
         			break;
         		case '[':
-        			array_insert(info->contents[info->cy], info->cx, ']', MAX_CHARS_PER_LINE);
+                    array_insert(info->contents[info->cy], info->cx, ']', info->size[info->cy]);
         			break;
         		case '{':
-        			array_insert(info->contents[info->cy], info->cx, '}', MAX_CHARS_PER_LINE);
+                    array_insert(info->contents[info->cy], info->cx, '}', info->size[info->cy]);
         			break;
         		case '\'':
         		case '\"':
-        			array_insert(info->contents[info->cy], info->cx, c, MAX_CHARS_PER_LINE);
+                    array_insert(info->contents[info->cy], info->cx, c, info->size[info->cy]);
 	       			break;
         		case '<':
-        			array_insert(info->contents[info->cy], info->cx, '>', MAX_CHARS_PER_LINE);
+                    array_insert(info->contents[info->cy], info->cx, '>', info->size[info->cy]);
         			break;
                 
         	}
+        	if(strlen(info->contents[info->cy])+1 >= info->size[info->cy])  enlarge_characters_unblind_info(info, info->cy);
         }
         strcpy(info->message, "");
 		if(add_to_ur_manager == 1) {
@@ -466,7 +465,8 @@ void tab_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
 	int x = info->cx;
 	int y = info->cy;
 	for(int i = 0; i < TAB_SIZE+1; i++) {
-		array_insert(info->contents[info->cy], info->cx++, TAB_KEY, MAX_CHARS_PER_LINE);
+		array_insert(info->contents[info->cy], info->cx++, TAB_KEY, info->size[info->cy]);
+        if(strlen(info->contents[info->cy])+1 >= info->size[info->cy])  enlarge_characters_unblind_info(info, info->cy);
 	}
 	if(add_to_ur_manager) {
 		ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
@@ -502,7 +502,7 @@ char *prev_line(unblind_info_t *info) {
 }
 
 void undo_type_char(WINDOW *win, unblind_info_t *info, int x, int y) {
-	move_to_left(info->contents[y], x);
+    move_to_left(info->contents[y], x, strlen(info->contents[y]));
 	info->cx = x;
     info->cy = y;
 	unblind_scroll_hor_calc(win, info, 1);
@@ -567,7 +567,7 @@ void undo_enter(WINDOW *win, unblind_info_t *info, int y) {
 void undo_tab(WINDOW *win, unblind_info_t *info, int x, int y) {
 	int i = 0;
 	while(i < TAB_SIZE) {
-		move_to_left(info->contents[y], x);
+        move_to_left(info->contents[y], x, strlen(info->contents[y]));
 		info->cx = x;
 		info->wcx = x;
 		while(y != info->cy) {
