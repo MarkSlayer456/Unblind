@@ -38,9 +38,11 @@
 #define CTRL_Q			17
 #define CTRL_P			16
 #define CTRL_F			6
+#define CTRL_B          2
 
 #define FIND_STR_MAX_LENGTH  300
 #define MAX_MESSAGE_LENGTH   300
+#define MAX_JUMP_STR_LENGTH  300
 
 int MAX_LINES;
 int MAX_CHARS_PER_LINE;
@@ -49,7 +51,9 @@ int WINDOW_HEIGHT;
 
 typedef enum {
 	FIND = 1,
-	EDIT = 2
+	EDIT = 2,
+    INSERT = 3,
+    JUMP = 4
 } unblind_mode_t;
 
 typedef struct user_settings {
@@ -70,7 +74,8 @@ typedef struct unblind_info {
 	char *message;
 	d_linked_list_t *find;
 	unblind_mode_t m;
-	char *fstr;
+	char *fstr; // find string
+    char *jstr; // jump string
 	undo_redo_manager_t *ur_manager;
 } unblind_info_t;
 

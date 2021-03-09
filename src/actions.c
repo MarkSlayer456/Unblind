@@ -28,11 +28,24 @@ void jump_to_end(WINDOW *win, unblind_info_t *info) {
     }
     i--;
     info->cy = i;
-    info->cx = strlen(info->contents[info->cy])-1;
+    if(current_line(info)[strlen(current_line(info))-1] == '\n') info->cx = strlen(current_line(info))-1;
+    else info->cx = strlen(current_line(info));
     unblind_scroll_hor_calc(win, info, 0);
     unblind_scroll_vert_calc(win, info);
     
     update_cursor_pos(win, info);
+}
+
+void jump_to_line(WINDOW *win, unblind_info_t *info, int line) {
+    if(info->contents[line][0] == '\0') {
+        strcpy(info->message, "Line does not exist!"); // TODO remove string literal
+        return;
+    } else {
+        info->cy = line;
+        info->cx = 0;
+        unblind_scroll_hor_calc(win, info, 0);
+        unblind_scroll_vert_calc(win, info);
+    }
 }
 
 void move_cursor_up(WINDOW *win, unblind_info_t *info) {

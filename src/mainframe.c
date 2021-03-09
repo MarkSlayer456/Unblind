@@ -49,8 +49,12 @@ void setup_unblind_info(unblind_info_t *info)
     
     info->message = (char *)malloc(MAX_MESSAGE_LENGTH * sizeof(char));
     memset(info->message, 0, MAX_MESSAGE_LENGTH * sizeof(char));
+    
     info->find = (d_linked_list_t *)malloc(sizeof(d_linked_list_t));
     info->fstr = (char *)malloc(sizeof(char) * FIND_STR_MAX_LENGTH);
+    
+    info->jstr = (char *)malloc(MAX_JUMP_STR_LENGTH * sizeof(char));
+    
     memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
     info->contents = (char **)malloc(MAX_LINES * sizeof(char *));
     info->size = (int *) malloc(MAX_LINES * sizeof(int));
@@ -77,6 +81,7 @@ void unblind_info_free(unblind_info_t *info)
     free(info->find);
     
     free(info->fstr);
+    free(info->jstr);
     
     for(int i = 0; i < MAX_LINES; i++) {
         if(info->contents[i])

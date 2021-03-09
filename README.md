@@ -14,7 +14,7 @@ The main idea of unblind is to have a full text editor in the terminal with ever
 			<li> + Duplicate Line (ctrl-d) </li>
 			<li> - Move Line (ctrl-up or down) </li>
 			<li> - Multi-line insertion (ctrl-i) </li>
-			<li> - Jump to line </li>
+			<li> + Jump to line </li>
 		</ul>
 	<li> - Syntax highlighting </li>
 	<li> - Multiple windows </li>

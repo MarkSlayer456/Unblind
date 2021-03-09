@@ -145,10 +145,10 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 		if(c == ENTER_KEY) {
 			find_str(win, info);
 			info->m = EDIT;
-            //unblind_scroll_hor_calc(win, info, 0);
-            //unblind_scroll_vert_calc(win, info);
+            // memset(info->message, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
             update_cursor_pos(win, info);
 		} else if(c == BACKSPACE_KEY_0 || c == BACKSPACE_KEY_1 || c == BACKSPACE_KEY_2) {
+            if(strlen(info->fstr) == 0) return;
 			info->fstr[strlen(info->fstr)-1] = '\0';
             info->wcx--;
 			strcpy(info->message, info->fstr);
@@ -161,7 +161,33 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			draw(win, info);
 		}
 		return;
-	}
+	} else if(info->m == JUMP) {
+        //char *line = malloc(1000 * sizeof(char)); // if a line number is bigger than this I don't know what to tell ya
+        if(c == ENTER_KEY) {
+            int lineNum = atoi(info->jstr); //TODO put -1 if I ever change the position to show the first line as 1, atm it's 0 so this works better
+            if(lineNum < 0) {
+                info->m = EDIT;
+                return;
+            }
+            jump_to_line(win, info, lineNum);
+            memset(info->message, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
+            info->m = EDIT;
+            update_cursor_pos(win, info);
+        } else if(c == BACKSPACE_KEY_0 || c == BACKSPACE_KEY_1 || c == BACKSPACE_KEY_2) {
+            if(strlen(info->jstr) == 0) return;
+            info->jstr[strlen(info->jstr)-1] = '\0';
+            info->wcx--;
+            strcpy(info->message, info->jstr);
+            draw(win, info);
+        } else if((c >= '0' && c <= '9')) {
+            if(strlen(info->jstr)+1 == 1000 * sizeof(char)) return;
+            info->jstr[strlen(info->jstr)] = c;
+            info->wcx++;
+            strcpy(info->message, info->jstr);
+            draw(win, info);
+        }
+        return;
+    }
 	if(c == ERR) {
 		return; // DON'T REDRAW SCREEN
 	}
@@ -215,7 +241,8 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
             jump_to_start(win, info);
 			break;
 		case CTRL_RIGHT_ARROW:
-			info->cx = strlen(info->contents[info->cy])-1;
+            if(current_line(info)[strlen(current_line(info))-1] == '\n') info->cx = strlen(current_line(info))-1;
+            else info->cx = strlen(current_line(info));
 			unblind_scroll_hor_calc(win, info, 0);
 			break;
 		case CTRL_LEFT_ARROW:
@@ -242,6 +269,13 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
             unblind_move_to_message(win, info);
             draw(win, info);
 			break;
+        case CTRL_B:
+            memset(info->jstr, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
+            memset(info->message, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
+            info->m = JUMP;
+            unblind_move_to_message(win, info);
+            draw(win, info);
+            break;
 		case CTRL_P:
 			find_str(win, info);
 			//next_find_str(win, info);
