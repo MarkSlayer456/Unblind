@@ -228,11 +228,11 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 	switch(x) {
 		case PAGE_UP:
 			strcpy(info->message, "page up!");
-            draw(win, info);
+            //draw(win, info);
 			break;
 		case PAGE_DOWN:
 			strcpy(info->message, "page down!");
-            draw(win, info);
+            //draw(win, info);
 			break;
 		case CTRL_DOWN_ARROW:
             jump_to_end(win, info);
@@ -267,19 +267,19 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
 			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
             unblind_move_to_message(win, info);
-            draw(win, info);
+            //draw(win, info);
 			break;
         case CTRL_B:
             memset(info->jstr, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
             memset(info->message, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
             info->m = JUMP;
             unblind_move_to_message(win, info);
-            draw(win, info);
+            //draw(win, info);
             break;
 		case CTRL_P:
 			find_str(win, info);
 			//next_find_str(win, info);
-            draw(win, info);
+            //draw(win, info);
 			break;
 		case CTRL_Q: // ctrl-q
 			shutdown(win, info);
@@ -291,26 +291,26 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 		case BACKSPACE_KEY_1:
 		case BACKSPACE_KEY_2:
 			backspace_action(win, info, 1);
-            draw(win, info);
+            //draw(win, info);
 			break;
 		case TAB_KEY:
 			tab_action(win, info, 1);
-            draw(win, info);
+            //draw(win, info);
 			break;
 		case ENTER_KEY:
 			enter_key_action(win, info, 1);
-            draw(win, info);
+            //draw(win, info);
 			break;
 		case CTRL_D: // ctrl-d
 			duplicate_line(win, info);
-            draw(win, info);
+            //draw(win, info);
 			break;
 		case CTRL_X: // ctrl-x
 			print_to_log("deleting line...\n");
 			delete_line(win, info);
 			print_to_log("Shifting up...\n");
 			shift_up(win, info);
-            draw(win, info);
+            //draw(win, info);
 			break;
 		case CTRL_Z: // ctrl-z
 			if(info->ur_manager->stack_u->tail != NULL) {
@@ -331,11 +331,11 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 			// strcpy(info->message, (char *) linked_list_d_get(info->ur_manager->stack_u, 0)->value);
 			// ur_action(win, info, (char *) info->ur_manager->stack_u->tail->value, info->ur_manager->stack_u->tail->x, info->ur_manager->stack_u->tail->y);
 			//linked_list_d_pop(info->ur_manager->stack_u);
-			draw(win, info);
+			//draw(win, info);
 			break;
 		default:
 			type_char(win, c, info, 1);
-            draw(win, info);
+            //draw(win, info);
 			break;
 	}
 // 	draw(win, info);
@@ -377,11 +377,22 @@ void shift_up(WINDOW *win, unblind_info_t *info) {
 		if(info->contents[i][0] == '\0') {
 			break;
 		}
-		strcpy(info->contents[i-1], info->contents[i]);
-		memset(info->contents[i], 0, info->size[i] * sizeof(char));
+		char *par1 = (char *)malloc(info->size[i] * sizeof(char));
+        strcpy(par1, info->contents[i]);
+        
+        info->contents[i] = realloc(info->contents[i], info->size[i] * sizeof(char));
+        
+        info->size[i-1] = info->size[i];
+        info->contents[i-1] = realloc(info->contents[i-1], info->size[i-1] * sizeof(char));
+        
+		strcpy(info->contents[i-1], par1);
 		//strcpy(info->contents[i], "");
 	}
-	info->cx = strlen(info->contents[info->cy])-1;
+    if(current_line(info)[strlen(current_line(info))-1] == '\n') info->cx = strlen(current_line(info))-1;
+    else info->cx = strlen(current_line(info));
+    
+    unblind_scroll_vert_calc(win, info);
+    unblind_scroll_hor_calc(win, info, 0);
 }
 
 void shift_down(WINDOW *win, unblind_info_t *info) {
