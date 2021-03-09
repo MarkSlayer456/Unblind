@@ -344,6 +344,7 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info) {
 
 void duplicate_line(WINDOW *win, unblind_info_t *info) {
 	shift_down(win, info);
+    info->size[info->cy-1] = info->size[info->cy];
 	strcpy(info->contents[info->cy], info->contents[info->cy-1]);
 }
 
@@ -361,6 +362,7 @@ void delete_line(WINDOW *win, unblind_info_t *info) {
 		info->wcy--;
 	}
 	unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_vert_calc(win, info);
 }
 
 void move_to_left(char *arr, int left, int size) {
@@ -380,13 +382,13 @@ void shift_up(WINDOW *win, unblind_info_t *info) {
 		char *par1 = (char *)malloc(info->size[i] * sizeof(char));
         strcpy(par1, info->contents[i]);
         
-        info->contents[i] = realloc(info->contents[i], info->size[i] * sizeof(char));
+        memset(info->contents[i], 0 ,info->size[i] * sizeof(char));
         
         info->size[i-1] = info->size[i];
         info->contents[i-1] = realloc(info->contents[i-1], info->size[i-1] * sizeof(char));
         
 		strcpy(info->contents[i-1], par1);
-		//strcpy(info->contents[i], "");
+        free(par1);
 	}
     if(current_line(info)[strlen(current_line(info))-1] == '\n') info->cx = strlen(current_line(info))-1;
     else info->cx = strlen(current_line(info));
@@ -397,7 +399,14 @@ void shift_up(WINDOW *win, unblind_info_t *info) {
 
 void shift_down(WINDOW *win, unblind_info_t *info) {
 	for(int i = MAX_LINES-1; i > info->cy; i--) {
-		strcpy(info->contents[i], info->contents[i-1]);
+        char *par1 = (char *)malloc(info->size[i-1] * sizeof(char));
+        strcpy(par1, info->contents[i-1]);
+        
+        info->size[i] = info->size[i-1];
+        info->contents[i] = realloc(info->contents[i], info->size[i] * sizeof(char));
+        memset(info->contents[i], 0,info->size[i] * sizeof(char));
+		strcpy(info->contents[i], par1);
+        free(par1);
 	}
 	info->cy++;
 	info->wcy++;
