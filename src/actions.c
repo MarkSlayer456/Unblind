@@ -247,7 +247,14 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		info->wcx--;
 		mvwdelch(win, info->cy, info->cx);
 		info->contents[info->cy][info->cx] = '\0';
-		strcat(info->contents[info->cy], info->contents[info->cy+1]);
+		
+		int new_length = strlen(current_line(info)) + strlen(next_line(info));
+        
+        info->size[info->cy] = MAX_CHARS_PER_LINE;
+        while(info->size[info->cy] < new_length) info->size[info->cy] *= 2;
+        info->contents[info->cy] = realloc(info->contents[info->cy], info->size[info->cy] * sizeof(char));
+		
+        strcat(info->contents[info->cy], info->contents[info->cy+1]);
 		info->cy++;
 		delete_line(win, info);
 		if(next_line(info)[0] == '\0') { // undo movement caused by delete line if the last line is deleted
@@ -255,9 +262,16 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 			info->wcy++;
 		}
 		strcpy(info->contents[info->cy], "\n");
-
+        // TODO this can cause an error
 		for(int k = info->cy; k < MAX_LINES-1; k++) {
-			strcpy(info->contents[k], info->contents[k+1]);
+            char *par = malloc(info->size[k+1] * sizeof(char));
+            strcpy(par, info->contents[k+1]);
+            
+            memset(info->contents[k], '\0', info->size[k]);
+            info->size[k] = info->size[k+1];
+            info->contents[k] = realloc(info->contents[k], info->size[k] * sizeof(char));
+			
+            strcpy(info->contents[k], par);
 		}
 
 		if(info->wcy <= 6 && info->scroll_offset > 0) {
@@ -282,7 +296,17 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 				del = current_character(info);
 				move_to_left(info->contents[info->cy], info->cx, strlen(info->contents[info->cy]));
 			}
-		} else {
+		} else if((prev_character(info) == '(' && current_character(info) == ')') ||
+            (prev_character(info) == '"' && current_character(info) == '"') ||
+            (prev_character(info) == '\'' && current_character(info) == '\'')) {
+            del = current_character(info);
+            move_to_left(info->contents[info->cy], info->cx, strlen(info->contents[info->cy]));
+            info->cx--;
+            info->wcx--;
+            del = current_character(info);
+            move_to_left(info->contents[info->cy], info->cx, strlen(info->contents[info->cy]));
+            update_cursor_pos(win, info);
+        } else {
 			info->cx--;
 			info->wcx--;
 			del = current_character(info);
