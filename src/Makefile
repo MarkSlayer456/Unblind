@@ -5,7 +5,7 @@ CFLAGS=-I$(IDIR) -Wall
 ODIR=obj
 LDIR=../lib
 
-LIBS=-lncurses
+LIBS=-lncurses -lpthread
 
 _DEPS = unblind.h actions.h double_linked_list.h mainframe.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))

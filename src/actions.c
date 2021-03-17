@@ -262,7 +262,6 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 			info->wcy++;
 		}
 		strcpy(info->contents[info->cy], "\n");
-        // TODO this can cause an error
 		for(int k = info->cy; k < MAX_LINES-1; k++) {
             char *par = malloc(info->size[k+1] * sizeof(char));
             strcpy(par, info->contents[k+1]);
@@ -603,7 +602,7 @@ void undo_enter(WINDOW *win, unblind_info_t *info, int y) {
 
 void undo_tab(WINDOW *win, unblind_info_t *info, int x, int y) {
 	int i = 0;
-	while(i < TAB_SIZE) {
+	while(i <= TAB_SIZE) {
         move_to_left(info->contents[y], x, strlen(info->contents[y]));
 		info->cx = x;
 		info->wcx = x;
