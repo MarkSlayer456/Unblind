@@ -245,10 +245,9 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		del = current_character(info);
 		info->cx--;
 		info->wcx--;
-		mvwdelch(win, info->cy, info->cx);
 		info->contents[info->cy][info->cx] = '\0';
 		
-		int new_length = strlen(current_line(info)) + strlen(next_line(info));
+		int new_length = len + strlen(next_line(info));
         
         info->size[info->cy] = MAX_CHARS_PER_LINE;
         while(info->size[info->cy] < new_length) info->size[info->cy] *= 2;
@@ -256,28 +255,20 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		
         strcat(info->contents[info->cy], info->contents[info->cy+1]);
 		info->cy++;
-		delete_line(win, info);
+		delete_line(win, info, 0);
+
 		if(next_line(info)[0] == '\0') { // undo movement caused by delete line if the last line is deleted
 			info->cy++;
 			info->wcy++;
 		}
-		strcpy(info->contents[info->cy], "\n");
-		for(int k = info->cy; k < MAX_LINES-1; k++) {
-            char *par = malloc(info->size[k+1] * sizeof(char));
-            strcpy(par, info->contents[k+1]);
-            
-            memset(info->contents[k], '\0', info->size[k]);
-            info->size[k] = info->size[k+1];
-            info->contents[k] = realloc(info->contents[k], info->size[k] * sizeof(char));
-			
-            strcpy(info->contents[k], par);
-		}
-
+		
 		if(info->wcy <= 6 && info->scroll_offset > 0) {
 			info->wcy++;
 		}
+		
 		info->cy--;
 		info->wcy--;
+        info->cx = len-1;
 		if(add_to_ur_manager) {
 			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
 			char *del1 = &del;
@@ -286,7 +277,6 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 			node->action = BACKSPACE_LAST_CHAR;
 			linked_list_d_add(info->ur_manager->stack_u, (void *) node, info->cx, info->cy);
 		}
-		
 	} else {
 		if(prev_character(info) == TAB_KEY) {
 			for(int i = 0; i < 5; i++) {
@@ -323,11 +313,6 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 	}
 	unblind_scroll_hor_calc(win, info, 0);
     unblind_scroll_vert_calc(win, info);
-	// char *del1 = &del;
-	// char *del2 = (char *) malloc(sizeof(char));
-	// del2 = strdup(del1);
-	// linked_list_d_add(info->ur_manager->stack_u, (void *) del2, info->cx, info->cy);
-	// strcpy(info->message, (char *) linked_list_d_get(info->ur_manager->stack_u, 0)->value);
 }
 
 void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
@@ -513,6 +498,48 @@ void tab_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
 	unblind_scroll_hor_calc(win, info, 1);
 }
 
+void duplicate_line(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
+    shift_down(win, info);
+    info->size[info->cy-1] = info->size[info->cy];
+    strcpy(info->contents[info->cy], info->contents[info->cy-1]);
+    if(add_to_ur_manager == 1) {
+        ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+        node->c = " ";
+        node->action = DUP_LINE;
+        linked_list_d_add(info->ur_manager->stack_u, (void *) node, info->cx, info->cy);
+    }
+}
+
+void delete_line(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
+    char *tmp = malloc(strlen(current_line(info)) * sizeof(char));
+    tmp = strdup(current_line(info));
+    int y = info->cy;
+    int x = info->cx;
+    int i = 0;
+    while(info->contents[info->cy][i]) {
+        move_to_left(info->contents[info->cy], i, strlen(info->contents[info->cy]));
+    }
+    if(info->cy == 0 && info->contents[info->cy+1][0] == '\0') {
+        info->contents[info->cy][0] = '\n';
+        info->contents[info->cy][1] = '\0';
+        info->cx = 0;
+    } else if(info->contents[info->cy + 1][0] == '\0') {
+        info->cy--;
+        info->wcy--;
+    }
+    shift_up(win, info);
+    unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_vert_calc(win, info);
+    if(add_to_ur_manager == 1) {
+        ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+        node->c = malloc(strlen(tmp) * sizeof(char));
+        node->c = strdup(tmp);
+        free(tmp);
+        node->action = DELETE_LINE;
+        linked_list_d_add(info->ur_manager->stack_u, (void *) node, x, y);
+    }
+}
+
 char current_character(unblind_info_t *info) {
 	return info->contents[info->cy][info->cx];
 }
@@ -576,8 +603,6 @@ void undo_last_backspace(WINDOW *win, unblind_info_t *info, char *c, int x, int 
 	enter_key_action(win, info, 0);
 	info->cx = x;
 	info->cy = y;
-	info->wcy = y;
-	info->wcx = x;
     unblind_scroll_hor_calc(win, info, 0);
 	linked_list_d_pop(info->ur_manager->stack_u);
 }
@@ -586,10 +611,8 @@ void undo_enter(WINDOW *win, unblind_info_t *info, int y) {
 	while(y != info->cy) {
 		if(info->wcy < y) {
 			info->cy++;
-			info->wcy++;
 	 	} else if(info->cy > y) {
 			info->cy--;
-			info->wcy--;
 	 	}
 	}
 	unblind_scroll_hor_calc(win, info, 0);
@@ -609,10 +632,8 @@ void undo_tab(WINDOW *win, unblind_info_t *info, int x, int y) {
 		while(y != info->cy) {
 			if(info->wcy < y) {
 				info->cy++;
-				info->wcy++;
 		 	} else if(info->cy > y) {
 				info->cy--;
-				info->wcy--;
 		 	}
 		}
 		unblind_scroll_hor_calc(win, info, 1);
@@ -620,4 +641,28 @@ void undo_tab(WINDOW *win, unblind_info_t *info, int x, int y) {
 		i++;
 	}
 	linked_list_d_pop(info->ur_manager->stack_u);
+}
+
+void undo_delete_line(WINDOW *win, unblind_info_t *info, char *c, int x, int y) {
+    info->cy = y-1;
+    shift_down(win, info);
+    info->cy = y;
+    
+    int new_length = strlen(c);
+    info->size[info->cy] = MAX_CHARS_PER_LINE;
+    while(info->size[info->cy] < new_length) info->size[info->cy] *= 2;
+
+    strcpy(info->contents[info->cy], c);
+    unblind_scroll_hor_calc(win, info, 1);
+    unblind_scroll_vert_calc(win, info);
+    linked_list_d_pop(info->ur_manager->stack_u);
+}
+void undo_duplicate_line(WINDOW *win, unblind_info_t *info, int x, int y) {
+    info->cx = x;
+    info->cy = y;
+    delete_line(win, info, 0);
+    info->cy--;
+    unblind_scroll_hor_calc(win, info, 1);
+    unblind_scroll_vert_calc(win, info);
+    linked_list_d_pop(info->ur_manager->stack_u);
 }

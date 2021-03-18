@@ -19,11 +19,14 @@ void find_str(WINDOW *win, unblind_info_t *info);
 void next_find_str(WINDOW *win, unblind_info_t *info);
 int hash(char *str);
 
+void save_file(char *file_name, unblind_info_t *info);
+
 void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager);
 void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager);
-void save_file(char *file_name, unblind_info_t *info);
 void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager);
 void tab_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager);
+void delete_line(WINDOW *win, unblind_info_t *info, int add_to_ur_manager);
+void duplicate_line(WINDOW *win, unblind_info_t *info, int add_to_ur_manager);
 
 char current_character(unblind_info_t *info);
 char next_character(unblind_info_t *info);
@@ -38,5 +41,7 @@ void undo_backspace(WINDOW *win, unblind_info_t *info, char *c, int x, int y);
 void undo_last_backspace(WINDOW *win, unblind_info_t *info, char *c, int x, int y);
 void undo_enter(WINDOW *win, unblind_info_t *info, int y);
 void undo_tab(WINDOW *win, unblind_info_t *info, int x, int y);
+void undo_delete_line(WINDOW *win, unblind_info_t *info, char *c, int x, int y);
+void undo_duplicate_line(WINDOW *win, unblind_info_t *info, int x, int y);
 
 #endif

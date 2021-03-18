@@ -86,10 +86,6 @@ typedef struct unblind_info {
 void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info);
 void write_contents_to_file(char *file_name, unblind_info_t *info);
 
-// actions.c
-void delete_line(WINDOW *win, unblind_info_t *info);
-void duplicate_line(WINDOW *win, unblind_info_t *info);
-
 // unblind.c
 void unblind_move_to_message(WINDOW *win, unblind_info_t *info);
 void update_cursor_pos(WINDOW *win, unblind_info_t *info);
@@ -105,11 +101,5 @@ void print_to_log(const char *error);
 
 void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info, int natural);
 void unblind_scroll_vert_calc(WINDOW *win, unblind_info_t *info);
-
-// these functions will
-// be moved to another file at a later date
-//d_linked_list_t *linked_list_d_create();
-//void linked_list_d_add(d_linked_list_t *dll, void *value, int x, int y);
-//dll_node_t *linked_list_d_get(d_linked_list_t *dll, int i);
 
 #endif

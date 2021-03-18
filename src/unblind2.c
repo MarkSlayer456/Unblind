@@ -17,7 +17,6 @@ void unblind_scroll_vert_calc(WINDOW *win, unblind_info_t *info) {
         info->scroll_offset = 0;
     }
     info->wcy = info->cy-info->scroll_offset;
-    //draw(win, info);
 }
 
 void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info, int natural) {
@@ -27,8 +26,6 @@ void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info, int natural) {
         info->scrollX_offset = 0;
     }
     info->wcx = info->cx-info->scrollX_offset;
-    
-    //draw(win, info);
 }
 
 
@@ -288,61 +285,46 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
 			enter_key_action(win, info, 1);
 			break;
 		case CTRL_D: // ctrl-d
-			duplicate_line(win, info);
+			duplicate_line(win, info, 1);
 			break;
 		case CTRL_X: // ctrl-x
-			print_to_log("deleting line...\n");
-			delete_line(win, info);
-			print_to_log("Shifting up...\n");
-			shift_up(win, info);
+			delete_line(win, info, 1);
 			break;
 		case CTRL_Z: // ctrl-z
 			if(info->ur_manager->stack_u->tail != NULL) {
 				dll_node_t *node = (dll_node_t *) info->ur_manager->stack_u->tail;
 				ur_node_t *ur_node = (ur_node_t *) node->value;
-				if(ur_node->action == TYPE) {
-					undo_type_char(win, info, node->x, node->y);
-				} else if(ur_node->action == BACKSPACE) {
-					undo_backspace(win, info, ur_node->c, node->x, node->y);
-				} else if(ur_node->action == BACKSPACE_LAST_CHAR) {
-					undo_last_backspace(win, info, ur_node->c, node->x, node->y);
-				} else if(ur_node->action == TAB) {
-					undo_tab(win, info, node->x, node->y);
-				} else if(ur_node->action == ENTER) {
-					undo_enter(win, info, node->y);
-				}
+                switch(ur_node->action) {
+                    case TYPE:
+                        undo_type_char(win, info, node->x, node->y);
+                        break;
+                    case BACKSPACE:
+                        undo_backspace(win, info, ur_node->c, node->x, node->y);
+                        break;
+                    case BACKSPACE_LAST_CHAR:
+                        undo_last_backspace(win, info, ur_node->c, node->x, node->y);
+                        break;
+                    case TAB:
+                        undo_tab(win, info, node->x, node->y);
+                        break;
+                    case ENTER:
+                        undo_enter(win, info, node->y);
+                        break;
+                    case DELETE_LINE:
+                        undo_delete_line(win, info, ur_node->c, node->x, node->y);
+                        break;
+                    case DUP_LINE:
+                        undo_duplicate_line(win, info, node->x, node->y);
+                        break;
+                    default:
+                        break;
+                }
 			}
-			// strcpy(info->message, (char *) linked_list_d_get(info->ur_manager->stack_u, 0)->value);
-			// ur_action(win, info, (char *) info->ur_manager->stack_u->tail->value, info->ur_manager->stack_u->tail->x, info->ur_manager->stack_u->tail->y);
-			//linked_list_d_pop(info->ur_manager->stack_u);
 			break;
 		default:
 			type_char(win, c, info, 1);
 			break;
 	}
-}
-
-void duplicate_line(WINDOW *win, unblind_info_t *info) {
-	shift_down(win, info);
-    info->size[info->cy-1] = info->size[info->cy];
-	strcpy(info->contents[info->cy], info->contents[info->cy-1]);
-}
-
-void delete_line(WINDOW *win, unblind_info_t *info) {
-	int i = 0;
-	while(info->contents[info->cy][i]) {
-		move_to_left(info->contents[info->cy], i, strlen(info->contents[info->cy]));
-	}
-	if(info->cy == 0 && info->contents[info->cy+1][0] == '\0') {
-		info->contents[info->cy][0] = '\n';
-		info->contents[info->cy][1] = '\0';
-		info->cx = 0;
-	} else if(info->contents[info->cy + 1][0] == '\0') {
-		info->cy--;
-		info->wcy--;
-	}
-	unblind_scroll_hor_calc(win, info, 0);
-    unblind_scroll_vert_calc(win, info);
 }
 
 void move_to_left(char *arr, int left, int size) {
