@@ -97,7 +97,6 @@ int array_insert(char *a, int x, char c, int size);
 void move_to_left(char *arr, int left, int size);
 void shift_up(WINDOW *win, unblind_info_t *info);
 void shift_down(WINDOW *win, unblind_info_t *info);
-void print_to_log(const char *error);
 
 void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info, int natural);
 void unblind_scroll_vert_calc(WINDOW *win, unblind_info_t *info);

@@ -95,7 +95,6 @@ void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
             }
         }
     }
-	print_to_log("moving to draw");
     draw(win, info);
 }
 
@@ -121,7 +120,6 @@ void write_contents_to_file(char *file_name, unblind_info_t *info) {
 }
 
 void update_cursor_pos(WINDOW *win, unblind_info_t *info) {
-	print_to_log("updating cursor pos...");
     mvprintw(LINES-1, COLS - 18, "pos: %4d, %4d ", info->wcx + info->scrollX_offset, info->wcy + info->scroll_offset);
     mvprintw(LINES-1, COLS - 31, "char: ----");
     if(current_character(info) == '\n') {
@@ -132,11 +130,9 @@ void update_cursor_pos(WINDOW *win, unblind_info_t *info) {
     
     move(info->wcy, info->wcx);
 	refresh();
-	print_to_log("done updating cursor pos...");
 }
 
 void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
-	print_to_log("managing input...\n");
 	if(info->m == FIND) {
 		if(c == ENTER_KEY) {
 			find_str(win, info);
@@ -392,19 +388,4 @@ void unblind_move_to_message(WINDOW *win, unblind_info_t *info) {
     info->wcy = LINES-2;
     info->wcx = 0;
     update_cursor_pos(win, info);
-}
-
-void print_to_log(const char *error) {
-	//TODO remove this file later, kind of annoying
-    FILE *fedit = fopen(".unblind_log.txt", "w+");
-        if(fedit == NULL) {
-            fprintf(stderr, "Error: log file not found\n");
-            return;
-        }
-		if(strlen(error)) {
-			fputs(error, fedit);
-		} else if(error[0] == '\n') {
-			fputs("\n", fedit);
-		}
-    fclose(fedit);
 }

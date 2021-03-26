@@ -43,18 +43,13 @@ void linked_list_d_add(d_linked_list_t *dll, void *value, int x, int y) {
 
 dll_node_t *linked_list_d_pop(d_linked_list_t *dll) {
 	if(dll->head != NULL) {
-		print_to_log("head isn't null");
 		// dll_node_t n = *dll->tail;
 		dll->tail = dll->tail->prev;
 		if(dll->tail == NULL) {
-			print_to_log("setting head to null");
 			dll->head = NULL;
 		} else {
 			dll->tail->next = NULL;
 		}
-		print_to_log("old tail gone");
-
-		// n->prev = NULL;
 		return NULL;
 	}
 	return NULL;

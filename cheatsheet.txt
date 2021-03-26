@@ -1,0 +1,16 @@
+file commands:
+	- ctrl-s 		| save
+	- ctrl-q 		| quit
+
+text editing commands:
+	- ctrl-b 		| jump to line
+	- ctrl-x 		| delete line
+	- ctrl-d 		| duplicate line
+	- ctrl-z		 | undo last action
+	- ctrl-f 		| find word
+	- ctrl-p 		| jump to next word (after using find)
+	- ctrl-UP_ARROW    | jump to top of file
+	- ctrl-DOWN_ARROW  | jump to bottom of file
+	- ctrl-RIGHT_ARROW | jump to end of line
+	- ctrl-LEFT_ARROW  | jump to start of line
+

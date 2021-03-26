@@ -37,8 +37,6 @@ void drawThread() {
     }
 }
 int main(int argc, char *argv[]) {
-    print_to_log("Program start");
-
 	MAX_LINES = 4096;
 	MAX_CHARS_PER_LINE = 256;
 	INFO_SIZE = MAX_LINES * MAX_CHARS_PER_LINE * 2; // TODO this can probably be a lot smaller
@@ -51,13 +49,11 @@ int main(int argc, char *argv[]) {
     info = (unblind_info_t *) malloc(4096); // TODO modified this should use INFO_SIZE
     setup_unblind_info(info);
 
-    print_to_log("info created");
-
     initscr();
     win = newwin(MAX_LINES, MAX_CHARS_PER_LINE, 0, 0);
     noecho();
-    nodelay(stdscr, FALSE);
-    keypad(stdscr, FALSE);
+    nodelay(win, FALSE);
+    keypad(win, FALSE);
     scrollok(win, FALSE);
     raw();
 
@@ -76,9 +72,7 @@ int main(int argc, char *argv[]) {
     }
 
     read_contents_from_file(f, win, info);
-    print_to_log("right before draw\n");
     draw(win, info);
-    print_to_log("Starting main loop\n");
     
     int tid[THREADS];
     pthread_t th[THREADS];

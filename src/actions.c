@@ -257,7 +257,7 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		info->cy++;
 		delete_line(win, info, 0);
 
-		if(next_line(info)[0] == '\0') { // undo movement caused by delete line if the last line is deleted
+		if(current_line(info)[0] == '\0') { // undo movement caused by delete line if the last line is deleted
 			info->cy++;
 			info->wcy++;
 		}
@@ -287,7 +287,9 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 			}
 		} else if((prev_character(info) == '(' && current_character(info) == ')') ||
             (prev_character(info) == '"' && current_character(info) == '"') ||
-            (prev_character(info) == '\'' && current_character(info) == '\'')) {
+            (prev_character(info) == '\'' && current_character(info) == '\'') ||
+            (prev_character(info) == '{' && current_character(info) == '}') ||
+            (prev_character(info) == '[' && current_character(info) == ']')) {
             del = current_character(info);
             move_to_left(info->contents[info->cy], info->cx, strlen(info->contents[info->cy]));
             info->cx--;
