@@ -15,7 +15,7 @@ void jump_to_start(WINDOW *win, unblind_info_t *info) {
     info->cy = 0;
     info->cx = 0;
     info->wcx = 0;
-    unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_hor_calc(win, info);
     unblind_scroll_vert_calc(win, info);
     update_cursor_pos(win, info);
 }
@@ -30,7 +30,7 @@ void jump_to_end(WINDOW *win, unblind_info_t *info) {
     info->cy = i;
     if(current_line(info)[strlen(current_line(info))-1] == '\n') info->cx = strlen(current_line(info))-1;
     else info->cx = strlen(current_line(info));
-    unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_hor_calc(win, info);
     unblind_scroll_vert_calc(win, info);
     
     update_cursor_pos(win, info);
@@ -43,7 +43,7 @@ void jump_to_line(WINDOW *win, unblind_info_t *info, int line) {
     } else {
         info->cy = line;
         info->cx = 0;
-        unblind_scroll_hor_calc(win, info, 0);
+        unblind_scroll_hor_calc(win, info);
         unblind_scroll_vert_calc(win, info);
     }
 }
@@ -64,9 +64,8 @@ void move_cursor_up(WINDOW *win, unblind_info_t *info) {
         info->cx = 0;
         info->wcx = 0;
     }
-    unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_hor_calc(win, info);
     unblind_scroll_vert_calc(win, info);
-	update_cursor_pos(win, info);
 }
 
 void move_cursor_down(WINDOW *win, unblind_info_t *info) {
@@ -89,13 +88,11 @@ void move_cursor_down(WINDOW *win, unblind_info_t *info) {
 		info->cx = strlen(current_line(info))-1;
 		info->wcx = strlen(current_line(info))-1;
 	}
-	unblind_scroll_hor_calc(win, info, 0);
+	unblind_scroll_hor_calc(win, info);
 	unblind_scroll_vert_calc(win, info);
-	update_cursor_pos(win, info);
 }
 
 void move_cursor_left(WINDOW *win, unblind_info_t *info) {
-    int nat = 1;
 	if(info->contents[info->cy][info->cx-1] == TAB_KEY) {
         info->cx--;
         if(info->cx == 0) {
@@ -114,14 +111,12 @@ void move_cursor_left(WINDOW *win, unblind_info_t *info) {
 		--info->cy;
 		info->cx = strlen(current_line(info))-1;
 		info->wcy--;
-        nat = 0;
 	}
 	unblind_scroll_vert_calc(win, info);
-	unblind_scroll_hor_calc(win, info, nat);
+	unblind_scroll_hor_calc(win, info);
 }
 
 void move_cursor_right(WINDOW *win, unblind_info_t *info) {
-    int nat = 1;
 	if(current_character(info) == TAB_KEY) {
         info->cx++;
         if((info->cx) == 0)  {
@@ -133,12 +128,10 @@ void move_cursor_right(WINDOW *win, unblind_info_t *info) {
 		info->cx++;
 	} else if(strlen(next_line(info)) > 0) {
 		info->cy++;
-		info->wcy++;
         info->cx = 0;
-		nat = 0;
 	}
 	unblind_scroll_vert_calc(win, info);
-	unblind_scroll_hor_calc(win, info, nat);
+	unblind_scroll_hor_calc(win, info);
 }
 
 int hash_prime = 301; //TODO move this to top
@@ -188,6 +181,8 @@ void find_str(WINDOW *win, unblind_info_t *info) {
 		tmp = linked_list_d_get(info->find, info->find->curr);
 		if(tmp == NULL) {
 			strcpy(info->message, "No results found!");
+            unblind_scroll_hor_calc(win, info);
+            unblind_scroll_vert_calc(win, info);
 			return;
 		}
 	} else {
@@ -197,22 +192,23 @@ void find_str(WINDOW *win, unblind_info_t *info) {
 			tmp = linked_list_d_get(info->find, info->find->curr);
 		}
 	}
-
-	info->cx = tmp->x;
-    info->cy = tmp->y;
-	unblind_scroll_hor_calc(win, info, 0);
-    unblind_scroll_vert_calc(win, info);
+    if(tmp != NULL) {
+        info->cx = tmp->x;
+        info->cy = tmp->y;
+        unblind_scroll_hor_calc(win, info);
+        unblind_scroll_vert_calc(win, info);
+    }
 }
 
 void next_find_str(WINDOW *win, unblind_info_t *info) {
 	dll_node_t *tmp = linked_list_d_get(info->find, info->find->curr);
 	if(tmp == NULL) {
-		find_str(win, info);
+        find_str(win, info);
 		return;
 	}
 	info->cx = tmp->x;
     info->cy = tmp->y;
-	unblind_scroll_hor_calc(win, info, 0);
+	unblind_scroll_hor_calc(win, info);
     unblind_scroll_vert_calc(win, info);
 	int find = hash(info->fstr);
 	for(int j = tmp->y; j < MAX_LINES-1; j++) {
@@ -241,10 +237,8 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		info->cy--;
 		int len = strlen(current_line(info));
 		info->cx = len;
-		info->wcx = len;
 		del = current_character(info);
 		info->cx--;
-		info->wcx--;
 		info->contents[info->cy][info->cx] = '\0';
 		
 		int new_length = len + strlen(next_line(info));
@@ -254,20 +248,12 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
         info->contents[info->cy] = realloc(info->contents[info->cy], info->size[info->cy] * sizeof(char));
 		
         strcat(info->contents[info->cy], info->contents[info->cy+1]);
-		info->cy++;
+        info->cy++;
+        if(next_line(info)[0] == '\0') { // counters delete_line movement if needed
+            info->cy++;
+        }
 		delete_line(win, info, 0);
-
-		if(current_line(info)[0] == '\0') { // undo movement caused by delete line if the last line is deleted
-			info->cy++;
-			info->wcy++;
-		}
-		
-		if(info->wcy <= 6 && info->scroll_offset > 0) {
-			info->wcy++;
-		}
-		
 		info->cy--;
-		info->wcy--;
         info->cx = len-1;
 		if(add_to_ur_manager) {
 			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
@@ -281,7 +267,6 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		if(prev_character(info) == TAB_KEY) {
 			for(int i = 0; i < 5; i++) {
 				info->cx--;
-				info->wcx--;
 				del = current_character(info);
 				move_to_left(info->contents[info->cy], info->cx, strlen(info->contents[info->cy]));
 			}
@@ -293,13 +278,11 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
             del = current_character(info);
             move_to_left(info->contents[info->cy], info->cx, strlen(info->contents[info->cy]));
             info->cx--;
-            info->wcx--;
             del = current_character(info);
             move_to_left(info->contents[info->cy], info->cx, strlen(info->contents[info->cy]));
             update_cursor_pos(win, info);
         } else {
 			info->cx--;
-			info->wcx--;
 			del = current_character(info);
             move_to_left(info->contents[info->cy], info->cx, strlen(info->contents[info->cy]));
 			update_cursor_pos(win, info);
@@ -313,7 +296,7 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 			linked_list_d_add(info->ur_manager->stack_u, (void *) node, info->cx, info->cy);
 		}
 	}
-	unblind_scroll_hor_calc(win, info, 0);
+	unblind_scroll_hor_calc(win, info);
     unblind_scroll_vert_calc(win, info);
 }
 
@@ -384,8 +367,7 @@ void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 	if(info->contents[MAX_LINES-1][0] != '\0') enlarge_lines_unblind_info(info);
     
 	unblind_scroll_vert_calc(win, info);
-	unblind_scroll_hor_calc(win, info, 0);
-	update_cursor_pos(win, info);
+	unblind_scroll_hor_calc(win, info);
 	
     if(add_to_ur_manager == 1) {
 		ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
@@ -405,7 +387,7 @@ void save_file(char *file_name, unblind_info_t *info) {
 void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager) {
 	int x = info->cx;
 	int y = info->cy;
-	if(c != EOF && c != '\0') {
+	if(c >= 32 && c <= 126) {
         if(!iscntrl(c)) { //TODO this if doesn't work
             switch(c) {
                 case ')':
@@ -449,7 +431,7 @@ void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager)
             if(strlen(info->contents[info->cy])+1 >= info->size[info->cy])  enlarge_characters_unblind_info(info, info->cy);
 			info->cx++;
 			info->wcx++;
-            unblind_scroll_hor_calc(win, info, 1);
+            unblind_scroll_hor_calc(win, info);
 			// auto completion for ()'s and such
         	switch(c) {
         		case '(':
@@ -497,7 +479,7 @@ void tab_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
 		node->action = TAB;
 		linked_list_d_add(info->ur_manager->stack_u, (void *) node, x, y);
 	}
-	unblind_scroll_hor_calc(win, info, 1);
+	unblind_scroll_hor_calc(win, info);
 }
 
 void duplicate_line(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
@@ -530,7 +512,7 @@ void delete_line(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
         info->wcy--;
     }
     shift_up(win, info);
-    unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_hor_calc(win, info);
     unblind_scroll_vert_calc(win, info);
     if(add_to_ur_manager == 1) {
         ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
@@ -570,7 +552,7 @@ void undo_type_char(WINDOW *win, unblind_info_t *info, int x, int y) {
     move_to_left(info->contents[y], x, strlen(info->contents[y]));
 	info->cx = x;
     info->cy = y;
-	unblind_scroll_hor_calc(win, info, 1);
+	unblind_scroll_hor_calc(win, info);
     unblind_scroll_vert_calc(win, info);
 	linked_list_d_pop(info->ur_manager->stack_u);
 }
@@ -588,7 +570,7 @@ void undo_backspace(WINDOW *win, unblind_info_t *info, char *c, int x, int y) {
 	 	}
 	}
 	unblind_scroll_vert_calc(win, info);
-    unblind_scroll_hor_calc(win, info, 1);
+    unblind_scroll_hor_calc(win, info);
 	if(*c == TAB_KEY) {
 		tab_action(win, info, 0);
 		strcpy(info->message, "TAB"); //TODO remove constant	
@@ -605,7 +587,7 @@ void undo_last_backspace(WINDOW *win, unblind_info_t *info, char *c, int x, int 
 	enter_key_action(win, info, 0);
 	info->cx = x;
 	info->cy = y;
-    unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_hor_calc(win, info);
 	linked_list_d_pop(info->ur_manager->stack_u);
 }
 
@@ -617,7 +599,7 @@ void undo_enter(WINDOW *win, unblind_info_t *info, int y) {
 			info->cy--;
 	 	}
 	}
-	unblind_scroll_hor_calc(win, info, 0);
+	unblind_scroll_hor_calc(win, info);
     unblind_scroll_vert_calc(win, info);
 	info->cx = 0;
 	info->wcx = 0;
@@ -638,7 +620,7 @@ void undo_tab(WINDOW *win, unblind_info_t *info, int x, int y) {
 				info->cy--;
 		 	}
 		}
-		unblind_scroll_hor_calc(win, info, 1);
+		unblind_scroll_hor_calc(win, info);
         unblind_scroll_vert_calc(win, info);
 		i++;
 	}
@@ -655,7 +637,7 @@ void undo_delete_line(WINDOW *win, unblind_info_t *info, char *c, int x, int y) 
     while(info->size[info->cy] < new_length) info->size[info->cy] *= 2;
 
     strcpy(info->contents[info->cy], c);
-    unblind_scroll_hor_calc(win, info, 1);
+    unblind_scroll_hor_calc(win, info);
     unblind_scroll_vert_calc(win, info);
     linked_list_d_pop(info->ur_manager->stack_u);
 }
@@ -664,7 +646,7 @@ void undo_duplicate_line(WINDOW *win, unblind_info_t *info, int x, int y) {
     info->cy = y;
     delete_line(win, info, 0);
     info->cy--;
-    unblind_scroll_hor_calc(win, info, 1);
+    unblind_scroll_hor_calc(win, info);
     unblind_scroll_vert_calc(win, info);
     linked_list_d_pop(info->ur_manager->stack_u);
 }

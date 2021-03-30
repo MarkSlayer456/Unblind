@@ -65,19 +65,25 @@ typedef struct user_settings {
 
 // this struct is getting pretty big
 typedef struct unblind_info {
-	int cx;
+    int lines;
+    int cols;
+	
+    int cx;
 	int cy;
 	int scroll_offset;
     int scrollX_offset;
 	int wcx;
 	int wcy;
-	char **contents;
+	
+    char **contents;
     int *size;
 	char *message;
+    
 	d_linked_list_t *find;
 	unblind_mode_t m;
 	char *fstr; // find string
     char *jstr; // jump string
+	
 	undo_redo_manager_t *ur_manager;
 } unblind_info_t;
 
@@ -98,7 +104,7 @@ void move_to_left(char *arr, int left, int size);
 void shift_up(WINDOW *win, unblind_info_t *info);
 void shift_down(WINDOW *win, unblind_info_t *info);
 
-void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info, int natural);
+void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info);
 void unblind_scroll_vert_calc(WINDOW *win, unblind_info_t *info);
 
 #endif

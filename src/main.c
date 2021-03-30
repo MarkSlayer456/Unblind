@@ -13,14 +13,17 @@
 
 pthread_mutex_t lock;
 char *file_name;
-WINDOW *win;
+int windows;
+WINDOW **win;
 unblind_info_t *info;
 
 void inputThread() {
     for(;;) {
         char c = getch();
         pthread_mutex_lock(&lock);
-        manage_input(file_name, win, info, c);
+        for(int i = 0; i < windows; i++) {
+            manage_input(file_name, win[i], info, c);
+        }
         pthread_mutex_unlock(&lock);
     }
 }
@@ -32,30 +35,52 @@ void drawThread() {
     for(;;) {
         nanosleep(&fps, NULL);
         pthread_mutex_lock(&lock);
-        draw(win, info);
+        for(int i = 0; i < windows; i++) {
+            draw(win[i], info);
+        }
         pthread_mutex_unlock(&lock);
     }
 }
+
+void create_win() {
+    if(windows == 0) {
+        win[windows++] = newwin(LINES, COLS, 0, 0);
+        noecho();
+        nodelay(win[windows-1], FALSE);
+        keypad(win[windows-1], FALSE);
+        scrollok(win[windows-1], FALSE);
+        raw();
+    } else {
+        for(int i = 0; i < windows-1; i++) {
+            wresize(win[i], LINES/windows, COLS/windows);
+        }
+        win[windows++] = newwin(LINES, COLS, 0, 0);
+        noecho();
+        nodelay(win[windows-1], FALSE);
+        keypad(win[windows-1], FALSE);
+        scrollok(win[windows-1], FALSE);
+        raw();
+        
+    }
+    
+}
+
 int main(int argc, char *argv[]) {
 	MAX_LINES = 4096;
 	MAX_CHARS_PER_LINE = 256;
 	INFO_SIZE = MAX_LINES * MAX_CHARS_PER_LINE * 2; // TODO this can probably be a lot smaller
 	WINDOW_HEIGHT = LINES_PER_WINDOW*2;
-
+    windows = 0;
+    
+    win = malloc(sizeof(WINDOW *) * 8);
+    
     FILE *f;
-    //int max_windows = 8;
-    //*windows = malloc(sizeof(WINDOW *) * 8); // this should allow 8 windows
 
-    info = (unblind_info_t *) malloc(4096); // TODO modified this should use INFO_SIZE
+    info = (unblind_info_t *) malloc(sizeof(unblind_info_t));
     setup_unblind_info(info);
 
     initscr();
-    win = newwin(MAX_LINES, MAX_CHARS_PER_LINE, 0, 0);
-    noecho();
-    nodelay(win, FALSE);
-    keypad(win, FALSE);
-    scrollok(win, FALSE);
-    raw();
+    create_win();
 
     if(argc == 2) {
         file_name = argv[1];
@@ -71,8 +96,8 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    read_contents_from_file(f, win, info);
-    draw(win, info);
+    read_contents_from_file(f, win[0], info);
+    draw(win[0], info);
     
     int tid[THREADS];
     pthread_t th[THREADS];

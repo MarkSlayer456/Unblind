@@ -19,7 +19,7 @@ void unblind_scroll_vert_calc(WINDOW *win, unblind_info_t *info) {
     info->wcy = info->cy-info->scroll_offset;
 }
 
-void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info, int natural) {
+void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info) {
     if(info->cx > SCROLLX_THRESHOLD) {
         info->scrollX_offset = info->cx - SCROLLX_THRESHOLD;
     } else {
@@ -52,9 +52,11 @@ void draw(WINDOW *win, unblind_info_t *info) {
 		}
 	}
 	wmove(win, LINES-2, 0);
-	mvprintw(LINES-2, 0, info->message);
 	wrefresh(win);
+	mvwprintw(win, LINES-2, 0, info->message);
 	update_cursor_pos(win, info);
+    wmove(win, info->wcy, info->wcx);
+	wrefresh(win);
 }
 
 void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
@@ -120,16 +122,15 @@ void write_contents_to_file(char *file_name, unblind_info_t *info) {
 }
 
 void update_cursor_pos(WINDOW *win, unblind_info_t *info) {
-    mvprintw(LINES-1, COLS - 18, "pos: %4d, %4d ", info->wcx + info->scrollX_offset, info->wcy + info->scroll_offset);
-    mvprintw(LINES-1, COLS - 31, "char: ----");
+    mvwprintw(win, LINES - 1, COLS  * .9, "pos: %4d, %4d ", info->cx, info->cy);
+    mvwprintw(win, LINES - 1, COLS * .8, "char: ----");
     if(current_character(info) == '\n') {
-    	mvprintw(LINES-1, COLS - 31, "char: \\n");
+    	mvwprintw(win, LINES - 1, COLS * .8, "char: \\n");
     } else {
-    	mvprintw(LINES-1, COLS - 31, "char: %c", info->contents[info->cy][info->cx]);	
+    	mvwprintw(win, LINES - 1, COLS * .8, "char: %c", info->contents[info->cy][info->cx]);
     }
     
-    move(info->wcy, info->wcx);
-	refresh();
+	wrefresh(win);
 }
 
 void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
@@ -144,7 +145,7 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
 			info->fstr[strlen(info->fstr)-1] = '\0';
             info->wcx--;
 			strcpy(info->message, info->fstr);
-		} else if((c >= 'A' && c <= 'z')) {
+		} else if((c >= 32 && c <= 126)) {
 			if(strlen(info->fstr)+1 == sizeof(char) * FIND_STR_MAX_LENGTH) return; // this is very long shouldn't need to be any bigger
 			info->fstr[strlen(info->fstr)] = c;
             info->wcx++;
@@ -229,11 +230,11 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
 		case CTRL_RIGHT_ARROW:
             if(current_line(info)[strlen(current_line(info))-1] == '\n') info->cx = strlen(current_line(info))-1;
             else info->cx = strlen(current_line(info));
-			unblind_scroll_hor_calc(win, info, 0);
+			unblind_scroll_hor_calc(win, info);
 			break;
 		case CTRL_LEFT_ARROW:
 			info->cx = 0;
-			unblind_scroll_hor_calc(win, info, 0);
+			unblind_scroll_hor_calc(win, info);
 			break;
 		case DOWN_ARROW: // down arrow
 			move_cursor_down(win, info);
@@ -352,7 +353,7 @@ void shift_up(WINDOW *win, unblind_info_t *info) {
     else info->cx = strlen(current_line(info));
     
     unblind_scroll_vert_calc(win, info);
-    unblind_scroll_hor_calc(win, info, 0);
+    unblind_scroll_hor_calc(win, info);
 }
 
 void shift_down(WINDOW *win, unblind_info_t *info) {
@@ -387,5 +388,6 @@ int array_insert(char *a, int x, char c, int size)
 void unblind_move_to_message(WINDOW *win, unblind_info_t *info) {
     info->wcy = LINES-2;
     info->wcx = 0;
-    update_cursor_pos(win, info);
+    wmove(win, info->wcy, info->wcx);
+    wrefresh(win);
 }
