@@ -65,9 +65,10 @@ typedef struct user_settings {
 
 // this struct is getting pretty big
 typedef struct unblind_info {
-    int lines;
-    int cols;
-	
+    int winlines;
+    int wincols;
+	WINDOW *win;
+    
     int cx;
 	int cy;
 	int scroll_offset;

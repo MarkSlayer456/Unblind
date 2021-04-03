@@ -58,7 +58,6 @@ void setup_unblind_info(unblind_info_t *info)
     memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
     info->contents = (char **)malloc(MAX_LINES * sizeof(char *));
     info->size = (int *) malloc(MAX_LINES * sizeof(int));
-    //memset(info->size, MAX_CHARS_PER_LINE, MAX_LINES * sizeof(int));
     for(int i = 0; i < MAX_LINES; i++) {
         info->size[i] = MAX_CHARS_PER_LINE;
         info->contents[i] = (char *)malloc(MAX_CHARS_PER_LINE * sizeof(char));

@@ -216,16 +216,16 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
 	
 	switch(x) {
 		case PAGE_UP:
-			strcpy(info->message, "page up!");
+            jump_to_start(win, info);
 			break;
 		case PAGE_DOWN:
-			strcpy(info->message, "page down!");
-			break;
-		case CTRL_DOWN_ARROW:
             jump_to_end(win, info);
 			break;
+		case CTRL_DOWN_ARROW:
+            move_line_down(win, info, 1);
+			break;
 		case CTRL_UP_ARROW:
-            jump_to_start(win, info);
+            move_line_up(win, info, 1);
 			break;
 		case CTRL_RIGHT_ARROW:
             if(current_line(info)[strlen(current_line(info))-1] == '\n') info->cx = strlen(current_line(info))-1;
@@ -305,13 +305,19 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
                         undo_tab(win, info, node->x, node->y);
                         break;
                     case ENTER:
-                        undo_enter(win, info, node->y);
+                        undo_enter(win, info, ur_node->c, node->y);
                         break;
                     case DELETE_LINE:
                         undo_delete_line(win, info, ur_node->c, node->x, node->y);
                         break;
                     case DUP_LINE:
                         undo_duplicate_line(win, info, node->x, node->y);
+                        break;
+                    case MOVE_LINE_DOWN:
+                        undo_move_line_down(win, info, node->x, node->y);
+                        break;
+                    case MOVE_LINE_UP:
+                        undo_move_line_up(win, info, node->x, node->y);
                         break;
                     default:
                         break;

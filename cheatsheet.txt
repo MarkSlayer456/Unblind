@@ -9,8 +9,10 @@ text editing commands:
 	- ctrl-z		 | undo last action
 	- ctrl-f 		| find word
 	- ctrl-p 		| jump to next word (after using find)
-	- ctrl-UP_ARROW    | jump to top of file
-	- ctrl-DOWN_ARROW  | jump to bottom of file
+	- ctrl-UP_ARROW    | move line up
+	- ctrl-DOWN_ARROW  | move line down
 	- ctrl-RIGHT_ARROW | jump to end of line
 	- ctrl-LEFT_ARROW  | jump to start of line
+	- PAGE-UP          | jump to start of file
+	- PAGE-DOWN        | jump to end of file
 

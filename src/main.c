@@ -10,6 +10,7 @@
 
 #include "unblind.h"
 #include "mainframe.h"
+#include "messages.h"
 
 pthread_mutex_t lock;
 char *file_name;
@@ -42,27 +43,33 @@ void drawThread() {
     }
 }
 
-void create_win() {
+void create_win(unblind_info_t *info) {
     if(windows == 0) {
-        win[windows++] = newwin(LINES, COLS, 0, 0);
+        win[windows] = newwin(LINES, COLS, 0, 0);
+        info->win = win[windows];
+        info->winlines = LINES;
+        info->wincols = COLS;
         noecho();
-        nodelay(win[windows-1], FALSE);
-        keypad(win[windows-1], FALSE);
-        scrollok(win[windows-1], FALSE);
+        nodelay(win[windows], FALSE);
+        keypad(win[windows], FALSE);
+        scrollok(win[windows], FALSE);
         raw();
+        windows++;
     } else {
         for(int i = 0; i < windows-1; i++) {
             wresize(win[i], LINES/windows, COLS/windows);
+            info->winlines /= windows;
+            info->wincols /= windows;
         }
-        win[windows++] = newwin(LINES, COLS, 0, 0);
+        win[windows] = newwin(LINES, COLS, 0, 0);
+        info->win = win[windows];
         noecho();
-        nodelay(win[windows-1], FALSE);
-        keypad(win[windows-1], FALSE);
-        scrollok(win[windows-1], FALSE);
+        nodelay(win[windows], FALSE);
+        keypad(win[windows], FALSE);
+        scrollok(win[windows], FALSE);
         raw();
-        
+        windows++;
     }
-    
 }
 
 int main(int argc, char *argv[]) {
@@ -80,19 +87,19 @@ int main(int argc, char *argv[]) {
     setup_unblind_info(info);
 
     initscr();
-    create_win();
+    create_win(info);
 
     if(argc == 2) {
         file_name = argv[1];
         f = fopen(file_name, "a+");
         if(f == NULL) {
-            fprintf(stderr, "Error: File not found!");
+            fprintf(stderr, FNF);
             endwin();
             exit(1);
         }
     } else {
         endwin();
-        fprintf(stderr, "Error: ./unblind <file name>\n");
+        fprintf(stderr, USAGE);
         exit(1);
     }
 

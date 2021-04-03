@@ -10,7 +10,9 @@ typedef enum {
 	ENTER_MIDDLE_OF_LINE = 5,
 	TAB = 6,
 	DELETE_LINE = 7,
-	DUP_LINE = 8
+	DUP_LINE = 8,
+    MOVE_LINE_UP = 9,
+    MOVE_LINE_DOWN = 10,
 } action_t;
 
 typedef struct ur_node {
