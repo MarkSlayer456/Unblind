@@ -249,11 +249,12 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 		
         strcat(info->contents[info->cy], info->contents[info->cy+1]);
         info->cy++;
-        if(next_line(info)[0] == '\0') { // counters delete_line movement if needed
-            info->cy++;
+        int fl = 1;
+        if(next_line(info)[0] == '\0') { // this is to counter act the movement from delete line
+            fl = 0;
         }
 		delete_line(win, info, 0);
-		info->cy--;
+        if(fl) info->cy--;
         info->cx = len-1;
 		if(add_to_ur_manager) {
 			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
@@ -335,6 +336,7 @@ void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
                 tabs += 1;
                 i += TAB_SIZE;
             }
+            if(info->contents[info->cy][i] != '\t') break;
         }
         info->cy++;
         info->cx = 0;
