@@ -5,7 +5,7 @@
 #define LINE_DOES_NOT_EXIST        "Line does not exist!"
 #define NO_RESULTS                 "No results found!"
 #define CTRL_P_LOOP_AGAIN          "CTRL-P again to loop search"
-#define SAVED                      "Saved" 
+#define SAVED                      "Saved " 
 #define EMPTY                      ""
 #define UNDO                       "Undid action"
 

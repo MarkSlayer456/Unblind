@@ -9,6 +9,7 @@
 #include <pthread.h>
 
 #include "unblind.h"
+#include "actions.h"
 #include "mainframe.h"
 #include "messages.h"
 
@@ -91,19 +92,18 @@ int main(int argc, char *argv[]) {
 
     if(argc == 2) {
         file_name = argv[1];
-        f = fopen(file_name, "a+");
-        if(f == NULL) {
-            fprintf(stderr, FNF);
-            endwin();
-            exit(1);
-        }
+        f = fopen(file_name, "r");
     } else {
         endwin();
         fprintf(stderr, USAGE);
         exit(1);
     }
-
-    read_contents_from_file(f, win[0], info);
+    if(f != NULL) {
+        read_contents_from_file(f, win[0], info);
+    }
+    if(strlen(current_line(info)) == 0) {
+        current_line(info)[0] = '\n';
+    }
     draw(win[0], info);
     
     int tid[THREADS];

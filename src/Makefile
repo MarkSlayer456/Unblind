@@ -7,7 +7,7 @@ LDIR=../lib
 
 LIBS=-lncurses -lpthread
 
-_DEPS = unblind.h actions.h double_linked_list.h mainframe.h
+_DEPS = unblind.h actions.h double_linked_list.h mainframe.hmessages.h
 DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
 
 _OBJ = unblind2.o main.o actions.o double_linked_list.o mainframe.o

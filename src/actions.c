@@ -275,7 +275,9 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
             (prev_character(info) == '"' && current_character(info) == '"') ||
             (prev_character(info) == '\'' && current_character(info) == '\'') ||
             (prev_character(info) == '{' && current_character(info) == '}') ||
-            (prev_character(info) == '[' && current_character(info) == ']')) {
+            (prev_character(info) == '[' && current_character(info) == ']') ||
+            (prev_character(info) == '<' && current_character(info) == '>') ||
+            (prev_character(info) == '\'' && current_character(info) == '\'')) {
             del = current_character(info);
             move_to_left(info->contents[info->cy], info->cx, strlen(info->contents[info->cy]));
             info->cx--;
@@ -430,8 +432,14 @@ void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager)
                     }
                     break;
                 case '\'':
+                    if(current_character(info) == '\'') {
+                        info->cx++;
+                        info->wcx++;
+                        return;
+                    }
+                    break;
         		case '\"':
-                    if(current_character(info) == '\'' || current_character(info) == '\"') {
+                    if(current_character(info) == '\"') {
                         info->cx++;
                         info->wcx++;
                         return;
@@ -462,7 +470,7 @@ void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager)
                     array_insert(info->contents[info->cy], info->cx, '}', info->size[info->cy]);
         			break;
         		case '\'':
-        		case '\"':
+        		case '"':
                     array_insert(info->contents[info->cy], info->cx, c, info->size[info->cy]);
 	       			break;
         		case '<':
