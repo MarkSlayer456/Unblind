@@ -4,24 +4,26 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <string.h>
+#include <math.h>
 
 #include "double_linked_list.h"
 #include "unblind.h"
 #include "actions.h"
 #include "mainframe.h"
+#include "messages.h"
 
-void unblind_scroll_vert_calc(WINDOW *win, unblind_info_t *info) {
-    if(info->cy > SCROLL_THRESHOLD) {
-        info->scroll_offset = info->cy - SCROLL_THRESHOLD;
+void unblind_scroll_vert_calc(unblind_info_t *info) {
+    if(info->cy > info->y_threshold) {
+        info->scroll_offset = info->cy - info->y_threshold;
     } else {
         info->scroll_offset = 0;
     }
     info->wcy = info->cy-info->scroll_offset;
 }
 
-void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info) {
-    if(info->cx > SCROLLX_THRESHOLD) {
-        info->scrollX_offset = info->cx - SCROLLX_THRESHOLD;
+void unblind_scroll_hor_calc(unblind_info_t *info) {
+    if(info->cx > info->x_threshold) {
+        info->scrollX_offset = info->cx - info->x_threshold;
     } else {
         info->scrollX_offset = 0;
     }
@@ -29,37 +31,37 @@ void unblind_scroll_hor_calc(WINDOW *win, unblind_info_t *info) {
 }
 
 
-void draw(WINDOW *win, unblind_info_t *info) {
+void draw(unblind_info_t *info) {
 	if(!info->contents) return;
-	werase(win); // this was causing errors with the windows ubuntu system
+	//werase(info->win); // this was causing errors with the windows ubuntu system
 	int y;
-	for(int i = info->scroll_offset; i <= info->scroll_offset + LINES; i++) {
+    for(int i = info->scroll_offset; i <= info->scroll_offset + info->winlines; i++) {
 		y = i - info->scroll_offset;
 		int x = 0;
-		for(int j = info->scrollX_offset; j <= info->scrollX_offset + COLS; j++) {
-            x = j-info->scrollX_offset;
+        for(int j = info->scrollX_offset; j <= info->scrollX_offset + info->wincols; j++) {
+            x = j - info->scrollX_offset;
             if(info->size[i] < j) break; // no need to draw
             if(info->contents[i][0] == '\0') break;
 			if(info->contents[i][j] != '\0') {
 				// bottom two lines are used for messages and other things
-				if(y <= LINES-PROTECTED_LINES) {
-				    wmove(win, y, x);
-					waddch(win, info->contents[i][j]);
+                if(y <= info->winlines - PROTECTED_LINES) {
+				    wmove(info->win, y, x);
+					waddch(info->win, info->contents[i][j]);
 				}
 			} else {
                 break;
             }
 		}
 	}
-	wmove(win, LINES-2, 0);
-	wrefresh(win);
-	mvwprintw(win, LINES-2, 0, info->message);
-	update_cursor_pos(win, info);
-    wmove(win, info->wcy, info->wcx);
-	wrefresh(win);
+	wmove(info->win, info->winlines - 2, 0);
+	//wrefresh(info->win);
+    mvwprintw(info->win, info->winlines - 2, 0, info->message);
+	update_cursor_pos(info);
+    wmove(info->win, info->wcy, info->wcx);
+	wrefresh(info->win);
 }
 
-void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
+void read_contents_from_file(FILE *f, unblind_info_t *info) {
     int i = 0; // characters
     int j = 0; // lines
 	int amount_to_read = MAX_CHARS_PER_LINE;
@@ -97,7 +99,7 @@ void read_contents_from_file(FILE *f, WINDOW *win, unblind_info_t *info) {
             }
         }
     }
-    draw(win, info);
+    draw(info);
 }
 
 void write_contents_to_file(char *file_name, unblind_info_t *info) {
@@ -121,25 +123,25 @@ void write_contents_to_file(char *file_name, unblind_info_t *info) {
     fclose(fedit);
 }
 
-void update_cursor_pos(WINDOW *win, unblind_info_t *info) {
-    mvwprintw(win, LINES - 1, COLS  * .9, "pos: %4d, %4d ", info->cx, info->cy);
-    mvwprintw(win, LINES - 1, COLS * .8, "char: ----");
+void update_cursor_pos(unblind_info_t *info) {
+    mvwprintw(info->win, info->winlines - 1, info->wincols - 31, "pos: %4d, %4d ", info->cx, info->cy);
+    mvwprintw(info->win, info->winlines - 1, info->wincols - 15, "char: ----");
     if(current_character(info) == '\n') {
-    	mvwprintw(win, LINES - 1, COLS * .8, "char: \\n");
+        mvwprintw(info->win, info->winlines - 1, info->wincols - 15, "char: \\n");
     } else {
-    	mvwprintw(win, LINES - 1, COLS * .8, "char: %c", info->contents[info->cy][info->cx]);
+        mvwprintw(info->win, info->winlines - 1, info->wincols - 15, "char: %c", info->contents[info->cy][info->cx]);
     }
     
-	wrefresh(win);
+	wrefresh(info->win);
 }
 
-void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
+void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) {
 	if(info->m == FIND) {
 		if(c == ENTER_KEY) {
-			find_str(win, info);
+			find_str(info);
 			info->m = EDIT;
             // memset(info->message, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
-            update_cursor_pos(win, info);
+            update_cursor_pos(info);
 		} else if(c == BACKSPACE_KEY_0 || c == BACKSPACE_KEY_1 || c == BACKSPACE_KEY_2) {
             if(strlen(info->fstr) == 0) return;
 			info->fstr[strlen(info->fstr)-1] = '\0';
@@ -160,10 +162,10 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
                 info->m = EDIT;
                 return;
             }
-            jump_to_line(win, info, lineNum);
+            jump_to_line(info, lineNum);
             memset(info->message, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
             info->m = EDIT;
-            update_cursor_pos(win, info);
+            update_cursor_pos(info);
         } else if(c == BACKSPACE_KEY_0 || c == BACKSPACE_KEY_1 || c == BACKSPACE_KEY_2) {
             if(strlen(info->jstr) == 0) return;
             info->jstr[strlen(info->jstr)-1] = '\0';
@@ -174,6 +176,36 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
             info->jstr[strlen(info->jstr)] = c;
             info->wcx++;
             strcpy(info->message, info->jstr);
+        }
+        return;
+    } else if(info->m == CMD) {
+        if(c == ENTER_KEY) {
+            info->m = EDIT;
+            unblind_scroll_vert_calc(info);
+            unblind_scroll_hor_calc(info);
+            update_cursor_pos(info);
+            
+            th->infos[th->windows] = (unblind_info_t *) malloc(sizeof(unblind_info_t));
+            setup_unblind_info(th->infos[th->windows]);
+            
+            strcpy(th->infos[th->windows]->file_name, info->cmd);
+            
+            if(create_win(th) == 1) {
+                set_active_window(th, th->windows-1);
+            } else {
+                unblind_info_free_mini(th->infos[th->windows]);
+                strcpy(info->message, NER);
+            }
+        } else if(c == BACKSPACE_KEY_0 || c == BACKSPACE_KEY_1 || c == BACKSPACE_KEY_2) {
+            if(strlen(info->cmd) == 0) return;
+            info->cmd[strlen(info->cmd)-1] = '\0';
+            strcpy(info->message, info->cmd);
+            info->wcx--;
+        } else if((c >= 32 && c <= 126)) {
+            if(strlen(info->cmd)+1 == sizeof(char) * FIND_STR_MAX_LENGTH) return; // this is very long shouldn't need to be any bigger
+            info->cmd[strlen(info->cmd)] = c;
+            info->wcx++;
+            strcpy(info->message, info->cmd);
         }
         return;
     }
@@ -216,56 +248,64 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
 	
 	switch(x) {
 		case PAGE_UP:
-            jump_to_start(win, info);
+            jump_to_start(info);
 			break;
 		case PAGE_DOWN:
-            jump_to_end(win, info);
+            jump_to_end(info);
 			break;
 		case CTRL_DOWN_ARROW:
-            move_line_down(win, info, 1);
+            move_line_down(info, 1);
 			break;
 		case CTRL_UP_ARROW:
-            move_line_up(win, info, 1);
+            move_line_up(info, 1);
 			break;
 		case CTRL_RIGHT_ARROW:
             if(current_line(info)[strlen(current_line(info))-1] == '\n') info->cx = strlen(current_line(info))-1;
             else info->cx = strlen(current_line(info));
-			unblind_scroll_hor_calc(win, info);
+			unblind_scroll_hor_calc(info);
 			break;
 		case CTRL_LEFT_ARROW:
 			info->cx = 0;
-			unblind_scroll_hor_calc(win, info);
+			unblind_scroll_hor_calc(info);
 			break;
 		case DOWN_ARROW: // down arrow
-			move_cursor_down(win, info);
+			move_cursor_down(info);
 			break;
 		case UP_ARROW: // up arrow
-			move_cursor_up(win, info);
+			move_cursor_up(info);
 			break;
 		case LEFT_ARROW: // left arrow
-			move_cursor_left(win, info);
+			move_cursor_left(info);
 			break;
 		case RIGHT_ARROW: // right arrow
-			move_cursor_right(win, info);
+			move_cursor_right(info);
 			break;
+        case CTRL_E:
+            //TODO prompt for a file name and a direction (vert or hor)
+            memset(info->cmd, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
+            memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
+            info->m = CMD;
+            unblind_move_to_message(info);
+            break;
 		case CTRL_F:
 			info->m = FIND;
 			info->find = NULL;
 			memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
 			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
-            unblind_move_to_message(win, info);
+            unblind_move_to_message(info);
 			break;
         case CTRL_B:
             memset(info->jstr, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
             memset(info->message, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
             info->m = JUMP;
-            unblind_move_to_message(win, info);
+            unblind_move_to_message(info);
             break;
 		case CTRL_P:
-			find_str(win, info);
+			find_str(info);
 			break;
 		case CTRL_Q: // ctrl-q
-			shutdown(win, info);
+            if(th->windows == 1) shutdown(th);
+            else close_active_win(th);
 			break;
 		case CTRL_S: // ctrl-s
 			save_file(file_name, info);
@@ -273,19 +313,22 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
 		case BACKSPACE_KEY_0:
 		case BACKSPACE_KEY_1:
 		case BACKSPACE_KEY_2:
-			backspace_action(win, info, 1);
+			backspace_action(info, 1);
 			break;
 		case TAB_KEY:
-			tab_action(win, info, 1);
+			tab_action(info, 1);
 			break;
 		case ENTER_KEY:
-			enter_key_action(win, info, 1);
+			enter_key_action(info, 1);
 			break;
 		case CTRL_D: // ctrl-d
-			duplicate_line(win, info, 1);
+			duplicate_line(info, 1);
 			break;
+        case CTRL_W:
+            change_active_window(th);
+            break;
 		case CTRL_X: // ctrl-x
-			delete_line(win, info, 1);
+			delete_line(info, 1);
 			break;
 		case CTRL_Z: // ctrl-z
 			if(info->ur_manager->stack_u->tail != NULL) {
@@ -293,31 +336,31 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
 				ur_node_t *ur_node = (ur_node_t *) node->value;
                 switch(ur_node->action) {
                     case TYPE:
-                        undo_type_char(win, info, node->x, node->y);
+                        undo_type_char(info, node->x, node->y);
                         break;
                     case BACKSPACE:
-                        undo_backspace(win, info, ur_node->c, node->x, node->y);
+                        undo_backspace(info, ur_node->c, node->x, node->y);
                         break;
                     case BACKSPACE_LAST_CHAR:
-                        undo_last_backspace(win, info, ur_node->c, node->x, node->y);
+                        undo_last_backspace(info, ur_node->c, node->x, node->y);
                         break;
                     case TAB:
-                        undo_tab(win, info, node->x, node->y);
+                        undo_tab(info, node->x, node->y);
                         break;
                     case ENTER:
-                        undo_enter(win, info, ur_node->c, node->y);
+                        undo_enter(info, ur_node->c, node->y);
                         break;
                     case DELETE_LINE:
-                        undo_delete_line(win, info, ur_node->c, node->x, node->y);
+                        undo_delete_line(info, ur_node->c, node->x, node->y);
                         break;
                     case DUP_LINE:
-                        undo_duplicate_line(win, info, node->x, node->y);
+                        undo_duplicate_line(info, node->x, node->y);
                         break;
                     case MOVE_LINE_DOWN:
-                        undo_move_line_down(win, info, node->x, node->y);
+                        undo_move_line_down(info, node->x, node->y);
                         break;
                     case MOVE_LINE_UP:
-                        undo_move_line_up(win, info, node->x, node->y);
+                        undo_move_line_up(info, node->x, node->y);
                         break;
                     default:
                         break;
@@ -325,7 +368,7 @@ void manage_input(char *file_name, WINDOW *win, unblind_info_t *info, char c) {
 			}
 			break;
 		default:
-			type_char(win, c, info, 1);
+			type_char(c, info, 1);
 			break;
 	}
 }
@@ -336,7 +379,7 @@ void move_to_left(char *arr, int left, int size) {
     }
 }
 
-void shift_up(WINDOW *win, unblind_info_t *info) {
+void shift_up(unblind_info_t *info) {
 	if(info->cy == 0 && info->contents[info->cy+1][0] == '\0') { // at the top of the file, return
 		return;
 	}
@@ -358,11 +401,11 @@ void shift_up(WINDOW *win, unblind_info_t *info) {
     if(current_line(info)[strlen(current_line(info))-1] == '\n') info->cx = strlen(current_line(info))-1;
     else info->cx = strlen(current_line(info));
     
-    unblind_scroll_vert_calc(win, info);
-    unblind_scroll_hor_calc(win, info);
+    unblind_scroll_vert_calc(info);
+    unblind_scroll_hor_calc(info);
 }
 
-void shift_down(WINDOW *win, unblind_info_t *info) {
+void shift_down(unblind_info_t *info) {
 	for(int i = MAX_LINES-1; i > info->cy; i--) {
         char *par1 = (char *)malloc(info->size[i-1] * sizeof(char));
         strcpy(par1, info->contents[i-1]);
@@ -375,7 +418,7 @@ void shift_down(WINDOW *win, unblind_info_t *info) {
 	}
 	info->cy++;
 	info->wcy++;
-    unblind_scroll_vert_calc(win, info);
+    unblind_scroll_vert_calc(info);
 }
 
 int array_insert(char *a, int x, char c, int size)
@@ -391,9 +434,29 @@ int array_insert(char *a, int x, char c, int size)
     return 0;
 }
 
-void unblind_move_to_message(WINDOW *win, unblind_info_t *info) {
-    info->wcy = LINES-2;
+void unblind_move_to_message(unblind_info_t *info) {
+    info->wcy = info->winlines-2;
     info->wcx = 0;
-    wmove(win, info->wcy, info->wcx);
-    wrefresh(win);
+    wmove(info->win, info->wcy, info->wcx);
+    wrefresh(info->win);
 }
+
+void set_active_window(th_info_t *th, int value) {
+    if(th->activeWin + 1 == th->windows) th->activeWin = 0;
+    else th->activeWin = value;
+}
+
+void change_active_window(th_info_t *th) {
+    if(th->activeWin + 1 >= th->windows) {
+        th->activeWin = 0;
+    } else {
+        th->activeWin++;
+    }
+}
+
+void draw_all_screens(th_info_t *th) {
+    for(int i = 0; i < th->windows; i++) {
+        draw(th->infos[i]);
+    }
+}
+

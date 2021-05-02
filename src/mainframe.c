@@ -44,6 +44,10 @@ void setup_unblind_info(unblind_info_t *info)
     info->scrollX_offset = 0;
     info->m = EDIT;
     
+    
+    info->file_name = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
+    info->cmd = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
+    
     info->ur_manager = (undo_redo_manager_t *) malloc(sizeof(undo_redo_manager_t));
     setup_unblind_ur_manager(info->ur_manager);
     
@@ -51,6 +55,7 @@ void setup_unblind_info(unblind_info_t *info)
     memset(info->message, 0, MAX_MESSAGE_LENGTH * sizeof(char));
     
     info->find = (d_linked_list_t *)malloc(sizeof(d_linked_list_t));
+    info->find->head = NULL;
     info->fstr = (char *)malloc(sizeof(char) * FIND_STR_MAX_LENGTH);
     
     info->jstr = (char *)malloc(MAX_JUMP_STR_LENGTH * sizeof(char));
@@ -65,15 +70,17 @@ void setup_unblind_info(unblind_info_t *info)
     }
 }
 
-void unblind_info_free(unblind_info_t *info) 
+
+void unblind_info_free_mini(unblind_info_t *info) 
 {
-    
     linked_list_d_free(info->ur_manager->stack_u, info->ur_manager->stack_u->head);
     linked_list_d_free(info->ur_manager->stack_r, info->ur_manager->stack_r->head);
     free(info->ur_manager->stack_u);
     free(info->ur_manager->stack_r);
     free(info->ur_manager);
     
+    free(info->file_name);
+    free(info->cmd);
     free(info->message);
     
     linked_list_d_free(info->find, info->find->head);
@@ -82,9 +89,9 @@ void unblind_info_free(unblind_info_t *info)
     free(info->fstr);
     free(info->jstr);
     
-    for(int i = 0; i < MAX_LINES; i++) {
-        if(info->contents[i])
-            free(info->contents[i]);
+    for(int j = 0; j < MAX_LINES; j++) {
+        if(info->contents[j])
+            free(info->contents[j]);
     }
     free(info->contents);
     free(info->size);
@@ -92,9 +99,18 @@ void unblind_info_free(unblind_info_t *info)
     free(info);
 }
 
-void shutdown(WINDOW *win, unblind_info_t *info) 
+void unblind_info_free(th_info_t *th) 
+{
+    for(int i = 0; i < th->windows; i++) {
+        unblind_info_free_mini(th->infos[i]);
+    }
+    free(th->infos);
+}
+
+void shutdown(th_info_t *th) 
 {
     endwin();
-    unblind_info_free(info);
+    unblind_info_free(th);
+    free(th);
     exit(0);
 }

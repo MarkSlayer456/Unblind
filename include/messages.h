@@ -11,5 +11,6 @@
 
 #define FNF                        "Error: File not found!\n"
 #define USAGE                      "Usage: ./unblind <file name>\n"
+#define NER                        "Error: Not enough room to open another window\n"
 
 #endif

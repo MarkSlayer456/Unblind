@@ -7,115 +7,187 @@
 #include <string.h>
 #include <time.h>
 #include <pthread.h>
+#include <math.h>
 
 #include "unblind.h"
 #include "actions.h"
 #include "mainframe.h"
 #include "messages.h"
 
-pthread_mutex_t lock;
-char *file_name;
-int windows;
-WINDOW **win;
-unblind_info_t *info;
-
-void inputThread() {
-    for(;;) {
-        char c = getch();
-        pthread_mutex_lock(&lock);
-        for(int i = 0; i < windows; i++) {
-            manage_input(file_name, win[i], info, c);
-        }
-        pthread_mutex_unlock(&lock);
-    }
-}
-
-void drawThread() {
-    struct timespec fps;
-    fps.tv_sec = 0;
-    fps.tv_nsec = 33333333.333; // about 30 fps
-    for(;;) {
-        nanosleep(&fps, NULL);
-        pthread_mutex_lock(&lock);
-        for(int i = 0; i < windows; i++) {
-            draw(win[i], info);
-        }
-        pthread_mutex_unlock(&lock);
-    }
-}
-
-void create_win(unblind_info_t *info) {
-    if(windows == 0) {
-        win[windows] = newwin(LINES, COLS, 0, 0);
-        info->win = win[windows];
-        info->winlines = LINES;
-        info->wincols = COLS;
-        noecho();
-        nodelay(win[windows], FALSE);
-        keypad(win[windows], FALSE);
-        scrollok(win[windows], FALSE);
-        raw();
-        windows++;
-    } else {
-        for(int i = 0; i < windows-1; i++) {
-            wresize(win[i], LINES/windows, COLS/windows);
-            info->winlines /= windows;
-            info->wincols /= windows;
-        }
-        win[windows] = newwin(LINES, COLS, 0, 0);
-        info->win = win[windows];
-        noecho();
-        nodelay(win[windows], FALSE);
-        keypad(win[windows], FALSE);
-        scrollok(win[windows], FALSE);
-        raw();
-        windows++;
-    }
-}
-
 int main(int argc, char *argv[]) {
 	MAX_LINES = 4096;
 	MAX_CHARS_PER_LINE = 256;
 	INFO_SIZE = MAX_LINES * MAX_CHARS_PER_LINE * 2; // TODO this can probably be a lot smaller
 	WINDOW_HEIGHT = LINES_PER_WINDOW*2;
-    windows = 0;
     
-    win = malloc(sizeof(WINDOW *) * 8);
+    int windows = 0;
+    int activeWin = 0;
+    unblind_info_t **infos = (unblind_info_t **) malloc(sizeof(unblind_info_t *) * MAX_WINDOWS);
+    int drawAll = 0;
+    pthread_mutex_t lock;
     
-    FILE *f;
+    infos[windows] = (unblind_info_t *) malloc(sizeof(unblind_info_t));
+    setup_unblind_info(infos[windows]);
 
-    info = (unblind_info_t *) malloc(sizeof(unblind_info_t));
-    setup_unblind_info(info);
-
-    initscr();
-    create_win(info);
-
+    
+    pthread_t th[THREADS];
+    pthread_mutex_init(&lock, NULL);
+    
+    th_info_t *th_info = malloc(sizeof(th_info_t));
+    th_info->windows = windows;
+    th_info->activeWin = activeWin;
+    th_info->drawAll = drawAll;
+    th_info->infos = infos;
+    th_info->lock = &lock;
+    
     if(argc == 2) {
-        file_name = argv[1];
-        f = fopen(file_name, "r");
+        th_info->infos[th_info->activeWin]->file_name = strdup(argv[1]);
     } else {
         endwin();
         fprintf(stderr, USAGE);
         exit(1);
     }
-    if(f != NULL) {
-        read_contents_from_file(f, win[0], info);
-    }
-    if(strlen(current_line(info)) == 0) {
-        current_line(info)[0] = '\n';
-    }
-    draw(win[0], info);
     
-    int tid[THREADS];
-    pthread_t th[THREADS];
-    pthread_mutex_init(&lock, NULL);
-    pthread_create(&th[0], NULL, (void *) inputThread, &tid[0]);
-    pthread_create(&th[1], NULL, (void *) drawThread, &tid[1]);
+    initscr();
+    create_win(th_info);
+    
+    draw(infos[th_info->activeWin]);
+    
+    pthread_create(&th[0], NULL, (void *) drawThread, (void *) th_info);
+    pthread_create(&th[1], NULL, (void *) inputThread, (void *) th_info);
     for(int i = 0; i < THREADS; i++) {
         pthread_join(th[i], NULL);
     }
-    fclose(f);
     endwin();
     exit(0);
     return 0;
+}
+
+void inputThread(void *argv) 
+{
+    th_info_t *th = (th_info_t *) argv;
+    for(;;) {
+        char c = getch();
+        pthread_mutex_lock(th->lock);
+        manage_input(th->infos[th->activeWin]->file_name, th->infos[th->activeWin], c, th);
+        pthread_mutex_unlock(th->lock);
+    }
+}
+
+void drawThread(void *argv) 
+{
+    th_info_t *th = (th_info_t *) argv;
+    struct timespec fps;
+    fps.tv_sec = 0;
+    fps.tv_nsec = 33333333.333; // about 30 fps
+    for(;;) {
+        nanosleep(&fps, NULL);
+        pthread_mutex_lock(th->lock);
+        for(int i = 0; i < th->windows; i++) {
+            werase(th->infos[i]->win);
+            wrefresh(th->infos[i]->win);
+        }
+        update_window_size(th);
+        draw_all_screens(th);
+        wrefresh(th->infos[th->activeWin]->win); // moves the cursor back to the active window
+        pthread_mutex_unlock(th->lock);
+    }
+}
+
+int create_win(th_info_t *th) 
+{
+    FILE *f;
+    if(th->windows == 0) {
+        th->infos[th->windows]->win = newwin(LINES, COLS, 0, 0);
+        th->infos[th->windows]->winlines = LINES;
+        th->infos[th->windows]->wincols = COLS;
+        th->infos[th->windows]->x_threshold = th->infos[th->windows]->wincols * .5;
+        th->infos[th->windows]->y_threshold = th->infos[th->windows]->winlines * .5;
+        
+        noecho();
+        nodelay(th->infos[th->windows]->win, FALSE);
+        keypad(th->infos[th->windows]->win, FALSE);
+        scrollok(th->infos[th->windows]->win, FALSE);
+        raw();
+        
+        f = fopen(th->infos[th->windows]->file_name, "r");
+        if(f != NULL) {
+            read_contents_from_file(f, th->infos[th->windows]);
+        }
+        if(strlen(current_line(th->infos[th->windows])) == 0) {
+            current_line(th->infos[th->windows])[th->windows] = '\n';
+        }
+        
+        th->windows++;
+        return 1;
+    } else {
+        if(th->infos[th->activeWin]->wincols/2 <= 30) return 0;
+        
+        int beginX;
+        if(th->activeWin == 0) beginX = 0;
+        else beginX = th->infos[th->activeWin]->wincols;
+        wresize(th->infos[th->activeWin]->win, th->infos[th->activeWin]->winlines, th->infos[th->activeWin]->wincols/th->windows);
+        th->infos[th->activeWin]->wincols =  floor(th->infos[th->activeWin]->wincols / th->windows);
+        th->infos[th->activeWin]->winlines = th->infos[th->activeWin]->winlines;
+        th->infos[th->activeWin]->x_threshold = th->infos[th->activeWin]->wincols * .5;
+        th->infos[th->activeWin]->y_threshold = th->infos[th->activeWin]->winlines * .5;
+        
+        th->infos[th->windows]->win = newwin(th->infos[th->activeWin]->winlines, th->infos[th->activeWin]->wincols, 0, th->infos[th->activeWin]->wincols+1+beginX);
+        th->infos[th->windows]->wincols = th->infos[th->activeWin]->wincols;
+        th->infos[th->windows]->winlines = th->infos[th->activeWin]->winlines;
+        th->infos[th->windows]->x_threshold = th->infos[th->windows]->wincols * .5;
+        th->infos[th->windows]->y_threshold = th->infos[th->windows]->winlines * .5;
+        
+        
+        f = fopen(th->infos[th->windows]->file_name, "r");
+        if(f != NULL) {
+            read_contents_from_file(f, th->infos[th->windows]);
+        }
+        if(strlen(current_line(th->infos[th->windows])) == 0) {
+            current_line(th->infos[th->windows])[th->windows] = '\n';
+        }
+        
+        noecho();
+        nodelay(th->infos[th->windows]->win, FALSE);
+        keypad(th->infos[th->windows]->win, FALSE);
+        scrollok(th->infos[th->windows]->win, FALSE);
+        raw();
+        th->windows++;
+        return 1;
+    }
+}
+
+int close_active_win(th_info_t *th) {
+    if(th->activeWin >= th->windows) {
+        return 0; // failed
+    }
+    werase(th->infos[th->activeWin]->win);
+    wrefresh(th->infos[th->activeWin]->win);
+    int addOn = floor(((float)th->infos[th->activeWin]->wincols)/(th->windows-1)); // how many cols to add to each window
+    
+    for(int j = th->activeWin; j < th->windows-1; j++) {
+        th->infos[j] = th->infos[j + 1];
+    }
+    
+    th->windows--;
+    
+    for(int i = 0; i < th->windows; i++) {
+        th->infos[i]->wincols += addOn;
+    }
+    if(th->activeWin != 0) th->activeWin--;
+    return 1;
+}
+
+void update_window_size(th_info_t *th)
+{
+    for(int i = 0; i < th->windows; i++) {
+        int cols = th->infos[i]->wincols =  floor(COLS / th->windows);
+        
+        th->infos[i]->x_threshold = th->infos[i]->wincols * .5;
+        th->infos[i]->y_threshold = th->infos[i]->winlines * .5;
+        
+        wresize(th->infos[i]->win, (float) th->infos[i]->winlines, cols);
+        mvwin(th->infos[i]->win, (float) 0, cols*i);
+        
+    }
 }

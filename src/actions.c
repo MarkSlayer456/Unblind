@@ -11,17 +11,17 @@
 #include "mainframe.h"
 #include "messages.h"
 
-void jump_to_start(WINDOW *win, unblind_info_t *info) {
+void jump_to_start(unblind_info_t *info) {
     info->wcy = 0;
     info->cy = 0;
     info->cx = 0;
     info->wcx = 0;
-    unblind_scroll_hor_calc(win, info);
-    unblind_scroll_vert_calc(win, info);
-    update_cursor_pos(win, info);
+    unblind_scroll_hor_calc(info);
+    unblind_scroll_vert_calc(info);
+    update_cursor_pos(info);
 }
 
-void jump_to_end(WINDOW *win, unblind_info_t *info) {
+void jump_to_end(unblind_info_t *info) {
     int i = 0;
     
     for(; i < MAX_LINES; i++) {
@@ -31,25 +31,25 @@ void jump_to_end(WINDOW *win, unblind_info_t *info) {
     info->cy = i;
     if(current_line(info)[strlen(current_line(info))-1] == '\n') info->cx = strlen(current_line(info))-1;
     else info->cx = strlen(current_line(info));
-    unblind_scroll_hor_calc(win, info);
-    unblind_scroll_vert_calc(win, info);
+    unblind_scroll_hor_calc(info);
+    unblind_scroll_vert_calc(info);
     
-    update_cursor_pos(win, info);
+    update_cursor_pos(info);
 }
 
-void jump_to_line(WINDOW *win, unblind_info_t *info, int line) {
+void jump_to_line(unblind_info_t *info, int line) {
     if(info->contents[line][0] == '\0') {
         strcpy(info->message, LINE_DOES_NOT_EXIST);
         return;
     } else {
         info->cy = line;
         info->cx = 0;
-        unblind_scroll_hor_calc(win, info);
-        unblind_scroll_vert_calc(win, info);
+        unblind_scroll_hor_calc(info);
+        unblind_scroll_vert_calc(info);
     }
 }
 
-void move_cursor_up(WINDOW *win, unblind_info_t *info) {
+void move_cursor_up(unblind_info_t *info) {
 	 if(!(info->cy-1 <= -1)) {
 		info->cy--;
 		info->wcy--;
@@ -65,16 +65,16 @@ void move_cursor_up(WINDOW *win, unblind_info_t *info) {
         info->cx = 0;
         info->wcx = 0;
     }
-    unblind_scroll_hor_calc(win, info);
-    unblind_scroll_vert_calc(win, info);
+    unblind_scroll_hor_calc(info);
+    unblind_scroll_vert_calc(info);
 }
 
-void move_cursor_down(WINDOW *win, unblind_info_t *info) {
+void move_cursor_down(unblind_info_t *info) {
 	if(next_line(info)[info->cx] == TAB_KEY) {
 		info->cy++;
 		info->wcy++;
 		while(current_character(info) == '\0') {
-			move_cursor_left(win, info);
+			move_cursor_left(info);
 		}
 		while(current_character(info) == TAB_KEY) {
 			info->cx++;
@@ -89,15 +89,15 @@ void move_cursor_down(WINDOW *win, unblind_info_t *info) {
 		info->cx = strlen(current_line(info))-1;
 		info->wcx = strlen(current_line(info))-1;
 	}
-	unblind_scroll_hor_calc(win, info);
-	unblind_scroll_vert_calc(win, info);
+	unblind_scroll_hor_calc(info);
+	unblind_scroll_vert_calc(info);
 }
 
-void move_cursor_left(WINDOW *win, unblind_info_t *info) {
+void move_cursor_left(unblind_info_t *info) {
 	if(info->contents[info->cy][info->cx-1] == TAB_KEY) {
         info->cx--;
         if(info->cx == 0) {
-            move_cursor_up(win, info);
+            move_cursor_up(info);
         }
         if(current_character(info) == TAB_KEY) {
             info->cx-=TAB_SIZE;
@@ -113,11 +113,11 @@ void move_cursor_left(WINDOW *win, unblind_info_t *info) {
 		info->cx = strlen(current_line(info))-1;
 		info->wcy--;
 	}
-	unblind_scroll_vert_calc(win, info);
-	unblind_scroll_hor_calc(win, info);
+	unblind_scroll_vert_calc(info);
+	unblind_scroll_hor_calc(info);
 }
 
-void move_cursor_right(WINDOW *win, unblind_info_t *info) {
+void move_cursor_right(unblind_info_t *info) {
 	if(current_character(info) == TAB_KEY) {
         info->cx++;
         if((info->cx) == 0)  {
@@ -131,8 +131,8 @@ void move_cursor_right(WINDOW *win, unblind_info_t *info) {
 		info->cy++;
         info->cx = 0;
 	}
-	unblind_scroll_vert_calc(win, info);
-	unblind_scroll_hor_calc(win, info);
+	unblind_scroll_vert_calc(info);
+	unblind_scroll_hor_calc(info);
 }
 
 int hash(char *str) {
@@ -148,7 +148,7 @@ int hash(char *str) {
 * Finds a word and moves the cursor to the first occurence of the word
 * to get the next word recall the function
 */
-void find_str(WINDOW *win, unblind_info_t *info) {
+void find_str(unblind_info_t *info) {
 	dll_node_t *tmp = NULL;
 	if(info->find == NULL) {
 		info->find = linked_list_d_create();
@@ -181,8 +181,8 @@ void find_str(WINDOW *win, unblind_info_t *info) {
 		tmp = linked_list_d_get(info->find, info->find->curr);
 		if(tmp == NULL) {
 			strcpy(info->message, NO_RESULTS);
-            unblind_scroll_hor_calc(win, info);
-            unblind_scroll_vert_calc(win, info);
+            unblind_scroll_hor_calc(info);
+            unblind_scroll_vert_calc(info);
 			return;
 		}
 	} else {
@@ -195,21 +195,21 @@ void find_str(WINDOW *win, unblind_info_t *info) {
     if(tmp != NULL) {
         info->cx = tmp->x;
         info->cy = tmp->y;
-        unblind_scroll_hor_calc(win, info);
-        unblind_scroll_vert_calc(win, info);
+        unblind_scroll_hor_calc(info);
+        unblind_scroll_vert_calc(info);
     }
 }
 
-void next_find_str(WINDOW *win, unblind_info_t *info) {
+void next_find_str(unblind_info_t *info) {
 	dll_node_t *tmp = linked_list_d_get(info->find, info->find->curr);
 	if(tmp == NULL) {
-        find_str(win, info);
+        find_str(info);
 		return;
 	}
 	info->cx = tmp->x;
     info->cy = tmp->y;
-	unblind_scroll_hor_calc(win, info);
-    unblind_scroll_vert_calc(win, info);
+	unblind_scroll_hor_calc(info);
+    unblind_scroll_vert_calc(info);
 	int find = hash(info->fstr);
 	for(int j = tmp->y; j < MAX_LINES-1; j++) {
 		for(int i = tmp->x; i < strlen(info->contents[j]) && strlen(info->contents[j]) >= strlen(info->fstr); i++) {
@@ -230,7 +230,7 @@ void next_find_str(WINDOW *win, unblind_info_t *info) {
 	strcpy(info->message, CTRL_P_LOOP_AGAIN);
 }
 
-void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
+void backspace_action(unblind_info_t *info, int add_to_ur_manager) {
 	if(info->cx <= 0 && info->cy <= 0) return;
 	char del;
 	if(info->cx <= 0 && info->cy > 0) {
@@ -253,7 +253,7 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
         if(next_line(info)[0] == '\0') { // this is to counter act the movement from delete line
             fl = 0;
         }
-		delete_line(win, info, 0);
+		delete_line(info, 0);
         if(fl) info->cy--;
         info->cx = len-1;
 		if(add_to_ur_manager) {
@@ -283,12 +283,10 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
             info->cx--;
             del = current_character(info);
             move_to_left(info->contents[info->cy], info->cx, strlen(info->contents[info->cy]));
-            update_cursor_pos(win, info);
         } else {
 			info->cx--;
 			del = current_character(info);
             move_to_left(info->contents[info->cy], info->cx, strlen(info->contents[info->cy]));
-			update_cursor_pos(win, info);
 		}
 		if(add_to_ur_manager) {
 			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
@@ -299,11 +297,11 @@ void backspace_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
 			linked_list_d_add(info->ur_manager->stack_u, (void *) node, info->cx, info->cy);
 		}
 	}
-	unblind_scroll_hor_calc(win, info);
-    unblind_scroll_vert_calc(win, info);
+	unblind_scroll_hor_calc(info);
+    unblind_scroll_vert_calc(info);
 }
 
-void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
+void enter_key_action(unblind_info_t *info, int add_to_ur_manager) {
 	char c = '\n';
 	int tabs = 0;
 	if(strlen(current_line(info)) == 0) {
@@ -377,14 +375,14 @@ void enter_key_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) 
         memset(info->contents[info->cy] + len + 1, '\0', info->size[info->cy] - len - 1);
 		free(partition);
         for(int i = 0; i < tabs; i++) {
-            tab_action(win, info, 0);
+            tab_action(info, 0);
         }
 	}
 	
 	if(info->contents[MAX_LINES-1][0] != '\0') enlarge_lines_unblind_info(info);
     
-	unblind_scroll_vert_calc(win, info);
-	unblind_scroll_hor_calc(win, info);
+	unblind_scroll_vert_calc(info);
+	unblind_scroll_hor_calc(info);
 	
     if(add_to_ur_manager == 1) {
 		ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
@@ -404,7 +402,7 @@ void save_file(char *file_name, unblind_info_t *info) {
 	strcat(info->message, file_name);
 }
 
-void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager) {
+void type_char(char c, unblind_info_t *info, int add_to_ur_manager) {
 	int x = info->cx;
 	int y = info->cy;
 	if(c >= 32 && c <= 126) {
@@ -457,7 +455,7 @@ void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager)
             if(strlen(info->contents[info->cy])+1 >= info->size[info->cy])  enlarge_characters_unblind_info(info, info->cy);
 			info->cx++;
 			info->wcx++;
-            unblind_scroll_hor_calc(win, info);
+            unblind_scroll_hor_calc(info);
 			// auto completion for ()'s and such
         	switch(c) {
         		case '(':
@@ -492,7 +490,7 @@ void type_char(WINDOW *win, char c, unblind_info_t *info, int add_to_ur_manager)
 	}
 }
 
-void tab_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
+void tab_action(unblind_info_t *info, int add_to_ur_manager) {
 	int x = info->cx;
 	int y = info->cy;
 	for(int i = 0; i < TAB_SIZE+1; i++) {
@@ -505,11 +503,11 @@ void tab_action(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
 		node->action = TAB;
 		linked_list_d_add(info->ur_manager->stack_u, (void *) node, x, y);
 	}
-	unblind_scroll_hor_calc(win, info);
+	unblind_scroll_hor_calc(info);
 }
 
-void duplicate_line(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
-    shift_down(win, info);
+void duplicate_line(unblind_info_t *info, int add_to_ur_manager) {
+    shift_down(info);
     info->size[info->cy-1] = info->size[info->cy];
     strcpy(info->contents[info->cy], info->contents[info->cy-1]);
     if(add_to_ur_manager == 1) {
@@ -520,7 +518,7 @@ void duplicate_line(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
     }
 }
 
-void delete_line(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
+void delete_line(unblind_info_t *info, int add_to_ur_manager) {
     char *tmp = malloc(strlen(current_line(info)) * sizeof(char));
     tmp = strdup(current_line(info));
     int y = info->cy;
@@ -537,9 +535,9 @@ void delete_line(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
         info->cy--;
         info->wcy--;
     }
-    shift_up(win, info);
-    unblind_scroll_hor_calc(win, info);
-    unblind_scroll_vert_calc(win, info);
+    shift_up(info);
+    unblind_scroll_hor_calc(info);
+    unblind_scroll_vert_calc(info);
     if(add_to_ur_manager == 1) {
         ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
         node->c = malloc(strlen(tmp) * sizeof(char));
@@ -550,7 +548,7 @@ void delete_line(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
     }
 }
 
-void move_line_down(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
+void move_line_down(unblind_info_t *info, int add_to_ur_manager) {
     if(info->contents[info->cy+1][0] == '\0') {
         return;
     }
@@ -570,8 +568,8 @@ void move_line_down(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
     strcpy(info->contents[info->cy+1], tmp);
     
     info->cy++;
-    unblind_scroll_hor_calc(win, info);
-    unblind_scroll_vert_calc(win, info);
+    unblind_scroll_hor_calc(info);
+    unblind_scroll_vert_calc(info);
     int x = info->cx;
     int y = info->cy;
     if(add_to_ur_manager == 1) { // TODO tmp isn't defined
@@ -581,7 +579,7 @@ void move_line_down(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
     }
 }
 
-void move_line_up(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
+void move_line_up(unblind_info_t *info, int add_to_ur_manager) {
     if(info->cy == 0) { // can't move up from here
         return;
     }
@@ -599,8 +597,8 @@ void move_line_up(WINDOW *win, unblind_info_t *info, int add_to_ur_manager) {
     strcpy(info->contents[info->cy-1], tmp);
     
     info->cy--;
-    unblind_scroll_hor_calc(win, info);
-    unblind_scroll_vert_calc(win, info);
+    unblind_scroll_hor_calc(info);
+    unblind_scroll_vert_calc(info);
     int x = info->cx;
     int y = info->cy;
     if(add_to_ur_manager == 1) { // TODO tmp isn't defined
@@ -636,68 +634,68 @@ char *prev_line(unblind_info_t *info) {
 	return info->contents[info->cy - 1];
 }
 
-void undo_type_char(WINDOW *win, unblind_info_t *info, int x, int y) {
+void undo_type_char(unblind_info_t *info, int x, int y) {
     move_to_left(info->contents[y], x, strlen(info->contents[y]));
 	info->cx = x;
     info->cy = y;
-	unblind_scroll_hor_calc(win, info);
-    unblind_scroll_vert_calc(win, info);
+	unblind_scroll_hor_calc(info);
+    unblind_scroll_vert_calc(info);
 	linked_list_d_pop(info->ur_manager->stack_u);
 }
 
-void undo_backspace(WINDOW *win, unblind_info_t *info, char *c, int x, int y) {
+void undo_backspace(unblind_info_t *info, char *c, int x, int y) {
 	strcpy(info->message, UNDO);
 	info->cx = x;
     info->cy = y;
-	unblind_scroll_vert_calc(win, info);
-    unblind_scroll_hor_calc(win, info);
+	unblind_scroll_vert_calc(info);
+    unblind_scroll_hor_calc(info);
 	if(*c == TAB_KEY) {
-		tab_action(win, info, 0);
+		tab_action(info, 0);
 	} else {
-		type_char(win, *c, info, 0);
+		type_char(*c, info, 0);
 	}
 	linked_list_d_pop(info->ur_manager->stack_u);
 }
 
-void undo_last_backspace(WINDOW *win, unblind_info_t *info, char *c, int x, int y) {
+void undo_last_backspace(unblind_info_t *info, char *c, int x, int y) {
 	strcpy(info->message, c);
 	info->cx = x;
 	info->cy = y;
-	enter_key_action(win, info, 0);
+	enter_key_action(info, 0);
 	info->cx = x;
 	info->cy = y;
-    unblind_scroll_hor_calc(win, info);
+    unblind_scroll_hor_calc(info);
 	linked_list_d_pop(info->ur_manager->stack_u);
 }
 
-void undo_enter(WINDOW *win, unblind_info_t *info, char *c, int y) {
+void undo_enter(unblind_info_t *info, char *c, int y) {
     info->cy = y;
     info->cx = strlen(c) * TAB_SIZE+1; // because tab_size is broken apparently
-    backspace_action(win, info, 0);
+    backspace_action(info, 0);
     for(int i = 0; i < strlen(c); i++) {
-        backspace_action(win, info, 0);
+        backspace_action(info, 0);
     }
-    unblind_scroll_hor_calc(win, info);
-    unblind_scroll_vert_calc(win, info);
+    unblind_scroll_hor_calc(info);
+    unblind_scroll_vert_calc(info);
 	linked_list_d_pop(info->ur_manager->stack_u);
 }
 
-void undo_tab(WINDOW *win, unblind_info_t *info, int x, int y) {
+void undo_tab(unblind_info_t *info, int x, int y) {
 	int i = 0;
 	while(i <= TAB_SIZE) {
         move_to_left(info->contents[y], x, strlen(info->contents[y]));
 		info->cx = x;
         info->cy = y ;
-		unblind_scroll_hor_calc(win, info);
-        unblind_scroll_vert_calc(win, info);
+		unblind_scroll_hor_calc(info);
+        unblind_scroll_vert_calc(info);
 		i++;
 	}
 	linked_list_d_pop(info->ur_manager->stack_u);
 }
 
-void undo_delete_line(WINDOW *win, unblind_info_t *info, char *c, int x, int y) {
+void undo_delete_line(unblind_info_t *info, char *c, int x, int y) {
     info->cy = y-1;
-    shift_down(win, info);
+    shift_down(info);
     info->cy = y;
     
     int new_length = strlen(c);
@@ -706,31 +704,31 @@ void undo_delete_line(WINDOW *win, unblind_info_t *info, char *c, int x, int y) 
 
     strcpy(info->contents[info->cy], c);
     info->cx = strlen(c)-1;
-    unblind_scroll_hor_calc(win, info);
-    unblind_scroll_vert_calc(win, info);
+    unblind_scroll_hor_calc(info);
+    unblind_scroll_vert_calc(info);
     linked_list_d_pop(info->ur_manager->stack_u);
 }
 
-void undo_duplicate_line(WINDOW *win, unblind_info_t *info, int x, int y) {
+void undo_duplicate_line(unblind_info_t *info, int x, int y) {
     info->cx = x;
     info->cy = y;
-    delete_line(win, info, 0);
+    delete_line(info, 0);
     info->cy--;
-    unblind_scroll_hor_calc(win, info);
-    unblind_scroll_vert_calc(win, info);
+    unblind_scroll_hor_calc(info);
+    unblind_scroll_vert_calc(info);
     linked_list_d_pop(info->ur_manager->stack_u);
 }
 
-void undo_move_line_down(WINDOW *win, unblind_info_t *info, int x, int y) {
+void undo_move_line_down(unblind_info_t *info, int x, int y) {
     info->cx = x;
     info->cy = y;
-    move_line_up(win, info, 0);
+    move_line_up(info, 0);
     linked_list_d_pop(info->ur_manager->stack_u);
 }
 
-void undo_move_line_up(WINDOW *win, unblind_info_t *info, int x, int y) {
+void undo_move_line_up(unblind_info_t *info, int x, int y) {
     info->cx = x;
     info->cy = y;
-    move_line_down(win, info, 0);
+    move_line_down(info, 0);
     linked_list_d_pop(info->ur_manager->stack_u);
 }
