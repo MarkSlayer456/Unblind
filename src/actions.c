@@ -664,10 +664,14 @@ void undo_tab(unblind_info_t *info, int x, int y) {
 }
 
 void undo_delete_line(unblind_info_t *info, char *c, int x, int y) {
-    info->cy = y-1;
-    shift_down(info);
-    info->cy = y;
-    
+	if(y == 0) {
+		shift_down(info);
+		info->cy = y;
+	} else {
+		info->cy = y-1;
+		shift_down(info);
+		info->cy = y;
+	}
     int new_length = strlen(c);
     info->size[info->cy] = MAX_CHARS_PER_LINE;
     while(info->size[info->cy] < new_length) info->size[info->cy] *= 2;
