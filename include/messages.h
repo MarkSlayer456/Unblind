@@ -13,4 +13,6 @@
 #define USAGE                      "Usage: ./unblind <file name>\n"
 #define NER                        "Error: Not enough room to open another window\n"
 
+#define SAVE_QUIT_MESG			   "Would you like to save your changes? (y, n, or esc):"
+
 #endif

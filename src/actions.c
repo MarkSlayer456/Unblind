@@ -200,36 +200,6 @@ void find_str(unblind_info_t *info) {
     }
 }
 
-void next_find_str(unblind_info_t *info) {
-	dll_node_t *tmp = linked_list_d_get(info->find, info->find->curr);
-	if(tmp == NULL) {
-        find_str(info);
-		return;
-	}
-	info->cx = tmp->x;
-    info->cy = tmp->y;
-	unblind_scroll_hor_calc(info);
-    unblind_scroll_vert_calc(info);
-	int find = hash(info->fstr);
-	for(int j = tmp->y; j < MAX_LINES-1; j++) {
-		for(int i = tmp->x; i < strlen(info->contents[j]) && strlen(info->contents[j]) >= strlen(info->fstr); i++) {
-			char *newStr = malloc(sizeof(char) * strlen(info->fstr)+1);
-			strncpy(newStr, info->contents[j]+i, strlen(info->fstr));
-			newStr[strlen(info->fstr)+1] = '\0';
-			
-			int look = hash(newStr);
-			if(look == find) {
-				if(strcmp(newStr, info->fstr) == 0) {
-					linked_list_d_add(info->find, (void *) info->fstr,  i, j);
-					return;
-				}
-			}
-			free(newStr);
-		}
-	}
-	strcpy(info->message, CTRL_P_LOOP_AGAIN);
-}
-
 void backspace_action(unblind_info_t *info, int add_to_ur_manager) {
 	if(info->cx <= 0 && info->cy <= 0) return;
 	char del;

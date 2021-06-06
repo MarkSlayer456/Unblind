@@ -49,8 +49,17 @@ int main(int argc, char *argv[]) {
     }
     
     initscr();
-    create_win(th_info);
+	create_win(th_info);
     
+	start_color();
+	use_default_colors();
+	
+	init_pair(1, -1, -1);
+	init_pair(2, COLOR_MAGENTA, -1);
+	init_pair(3, COLOR_RED, -1);
+	init_pair(4, COLOR_GREEN, -1);
+	init_pair(5, COLOR_BLUE, -1);
+	
     draw(infos[th_info->activeWin]);
     
     pthread_create(&th[0], NULL, (void *) drawThread, (void *) th_info);
@@ -117,7 +126,7 @@ int create_win(th_info_t *th)
         if(strlen(current_line(th->infos[th->windows])) == 0) {
             current_line(th->infos[th->windows])[th->windows] = '\n';
         }
-        
+        parse_file(th->infos[th->windows]);
         th->windows++;
         return 1;
     } else {
@@ -152,7 +161,8 @@ int create_win(th_info_t *th)
         keypad(th->infos[th->windows]->win, FALSE);
         scrollok(th->infos[th->windows]->win, FALSE);
         raw();
-        th->windows++;
+		parse_file(th->infos[th->windows]);
+		th->windows++;
         return 1;
     }
 }

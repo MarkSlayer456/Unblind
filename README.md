@@ -7,7 +7,7 @@ Unblind uses common keybinds so you don't have to waste your time looking up eve
 <ol>
 	<li> Clone repository: git clone https://www.github.com/markslayer456/unblind/ . </li>
 	<li> Cd to src folder: cd unblind/src/ </li>
-	<li> Run install: sudo ./install </li>
+	<li> Run install: ./install </li>
 	<li> Executable is created in src folder </li>
 </ol>
 

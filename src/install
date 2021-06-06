@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+echo "installing ncurses"
 sudo apt-get install libncurses5-dev libncursesw5-dev
 sudo apt-get install make
 sudo yum group install "Development Tools"
@@ -6,5 +7,8 @@ sudo yum install ncurses-devel
 sudo dnf group install "Development Tools"
 sudo dnf install ncurses-devel
 mkdir obj
-echo "attempting to install ncurses"
 make
+eval mkdir "~$USER"/.unblind/
+eval mkdir "~$USER"/.unblind/"language-syntax"/
+eval cp ../"language\ syntax"/* "~$USER"/.unblind/"language-syntax"/
+echo "install complete!"

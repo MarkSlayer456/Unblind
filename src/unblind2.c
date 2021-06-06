@@ -11,6 +11,7 @@
 #include "actions.h"
 #include "mainframe.h"
 #include "messages.h"
+#include "csv_parse.h"
 
 void unblind_scroll_vert_calc(unblind_info_t *info) {
     if(info->cy > info->y_threshold) {
@@ -34,24 +35,89 @@ void unblind_scroll_hor_calc(unblind_info_t *info) {
 void draw(unblind_info_t *info) {
 	if(!info->contents) return;
 	//werase(info->win); // this was causing errors with the windows ubuntu system
+	
+	color_t color = 0;
+	int toggleColor = 0;
 	int y;
     for(int i = info->scroll_offset; i <= info->scroll_offset + info->winlines; i++) {
 		y = i - info->scroll_offset;
 		int x = 0;
-        for(int j = info->scrollX_offset; j <= info->scrollX_offset + info->wincols; j++) {
-            x = j - info->scrollX_offset;
-            if(info->size[i] < j) break; // no need to draw
-            if(info->contents[i][0] == '\0') break;
-			if(info->contents[i][j] != '\0') {
-				// bottom two lines are used for messages and other things
-                if(y <= info->winlines - PROTECTED_LINES) {
-				    wmove(info->win, y, x);
-					waddch(info->win, info->contents[i][j]);
+			for(int j = info->scrollX_offset; j <= info->scrollX_offset + info->wincols; j++) {
+				x = j - info->scrollX_offset;
+				if(info->size[i] < j) break; // no need to draw
+				if(info->contents[i][0] == '\0') break;
+				
+				if(toggleColor == 0) {
+					for(int k = 0; k < info->p_data->wordCount; k++) {
+						int len = strlen(info->p_data->words[k]);
+						char *tmp = malloc(len+1 * sizeof(char));
+						tmp[len+1] = '\0';
+						if(j > 0 && (info->contents[i][j] != '"')) {
+							// checks to make sure the word is stand alone
+							if(info->contents[i][j-1] != ' ' &&
+								info->contents[i][j-1] != '\t' &&
+								info->contents[i][j-1] != '(' &&
+								info->contents[i][j-1] != ')') continue;
+						}
+						int infront = j+len;
+						if(infront <= strlen(info->contents[i])) {
+							if(info->contents[i][infront] != ' ' &&
+								info->contents[i][infront] != '\t' &&
+								info->contents[i][infront] != '(' &&
+								info->contents[i][infront] != ')' &&
+								info->contents[i][infront] != '\n' &&
+								info->contents[i][infront] != '\0') {
+								continue;
+							}
+						}
+						strncpy(tmp, info->contents[i]+j, len);
+						if(strncmp(tmp, info->p_data->words[k], len) == 0) {
+							color = info->p_data->colors[k];
+							toggleColor = len;
+						}
+					}
 				}
-			} else {
-                break;
-            }
-		}
+				
+				if(info->contents[i][j] != '\0') {
+					// bottom two lines are used for messages and other things
+					if(y <= info->winlines - PROTECTED_LINES) {
+						switch(color) {
+							case RED:
+								wattron(info->win, COLOR_PAIR(3));
+								break;
+							case MAGENTA:
+								wattron(info->win, COLOR_PAIR(2));
+								break;
+							case GREEN:
+								wattron(info->win, COLOR_PAIR(4));
+								break;
+							case BLUE:
+								wattron(info->win, COLOR_PAIR(5));
+								break;
+						}
+						wmove(info->win, y, x);
+						waddch(info->win, info->contents[i][j]);
+						switch(color) {
+							case RED:
+								wattroff(info->win, COLOR_PAIR(3));
+								break;
+							case MAGENTA:
+								wattroff(info->win, COLOR_PAIR(2));
+								break;
+							case GREEN:
+								wattroff(info->win, COLOR_PAIR(4));
+								break;
+							case BLUE:
+								wattroff(info->win, COLOR_PAIR(5));
+								break;
+						}
+					}
+					if(toggleColor > 0) toggleColor--;
+					if(toggleColor == 0) color = 0;
+				} else {
+					break;
+				}
+			}
 	}
 	wmove(info->win, info->winlines - 2, 0);
 	//wrefresh(info->win);
@@ -152,6 +218,13 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			info->fstr[strlen(info->fstr)] = c;
             info->wcx++;
 			strcpy(info->message, info->fstr);
+		} else if(c == ESC_KEY) {
+			info->m = EDIT;
+			unblind_scroll_vert_calc(info);
+			unblind_scroll_hor_calc(info);
+			update_cursor_pos(info);
+			memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
+			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
 		}
 		return;
 	} else if(info->m == JUMP) {
@@ -176,7 +249,13 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
             info->jstr[strlen(info->jstr)] = c;
             info->wcx++;
             strcpy(info->message, info->jstr);
-        }
+		} else if(c == ESC_KEY) {
+			info->m = EDIT;
+			unblind_scroll_vert_calc(info);
+			unblind_scroll_hor_calc(info);
+			update_cursor_pos(info);
+			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
+		}
         return;
     } else if(info->m == CMD) {
         if(c == ENTER_KEY) {
@@ -206,9 +285,42 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
             info->cmd[strlen(info->cmd)] = c;
             info->wcx++;
             strcpy(info->message, info->cmd);
-        }
+		} else if(c == ESC_KEY) {
+			info->m = EDIT;
+			unblind_scroll_vert_calc(info);
+			unblind_scroll_hor_calc(info);
+			update_cursor_pos(info);
+			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
+		}
         return;
-    }
+	} else if(info->m == QUIT_SAVE) {
+		// move cursor to end of current string
+		info->wcx = strlen(info->message);
+		info->prompt_save = 0;
+		if(c == 'y' && info->message[info->wcx-1] != 'y' && info->message[info->wcx-1] != 'n') {
+			info->message[info->wcx++] = 'y';
+			info->prompt_save = 1;
+		} else if(c == 'n' && info->message[info->wcx-1] != 'y' && info->message[info->wcx-1] != 'n') {
+			info->message[info->wcx++] = 'n';
+			info->prompt_save = 0;
+		} else if((c == BACKSPACE_KEY_0 || c == BACKSPACE_KEY_1 || c == BACKSPACE_KEY_2) &&
+			(info->message[info->wcx-1] == 'y' || info->message[info->wcx-1] == 'n')) {
+			info->wcx--; 
+			info->message[info->wcx] = '\0';
+		} else if(c == ESC_KEY) {
+			info->m = EDIT;
+			unblind_scroll_vert_calc(info);
+			unblind_scroll_hor_calc(info);
+			update_cursor_pos(info);
+		} else if(c == ENTER_KEY) {
+			if(info->prompt_save == 1) {
+				save_file(file_name, info);
+			}
+			if(th->windows == 1) shutdown(th);
+			else close_active_win(th);
+		}
+		return;
+	}
 	if(c == ERR) {
 		return; // DON'T REDRAW SCREEN
 	}
@@ -245,7 +357,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 		}
 	}
 	/////////////////////////////////////////////////////////////////////////////////////////////
-	
+	int modified = 0; // was the file modified during operation?
 	switch(x) {
 		case PAGE_UP:
             jump_to_start(info);
@@ -255,9 +367,11 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			break;
 		case CTRL_DOWN_ARROW:
             move_line_down(info, 1);
+			modified = 1;
 			break;
 		case CTRL_UP_ARROW:
             move_line_up(info, 1);
+			modified = 1;
 			break;
 		case CTRL_RIGHT_ARROW:
             if(current_line(info)[strlen(current_line(info))-1] == '\n') info->cx = strlen(current_line(info))-1;
@@ -304,31 +418,44 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			find_str(info);
 			break;
 		case CTRL_Q: // ctrl-q
-            if(th->windows == 1) shutdown(th);
-            else close_active_win(th);
+			if(info->needs_saved ==  1) {
+				info->m = QUIT_SAVE;
+				unblind_move_to_message(info);
+				strcpy(info->message, SAVE_QUIT_MESG);
+				info->wcx = strlen(info->message);
+			} else {
+				if(th->windows == 1) shutdown(th);
+				else close_active_win(th);
+			}
 			break;
 		case CTRL_S: // ctrl-s
 			save_file(file_name, info);
+			info->needs_saved = 0;
 			break;
 		case BACKSPACE_KEY_0:
 		case BACKSPACE_KEY_1:
 		case BACKSPACE_KEY_2:
 			backspace_action(info, 1);
+			modified = 1;
 			break;
 		case TAB_KEY:
 			tab_action(info, 1);
+			modified = 1;
 			break;
 		case ENTER_KEY:
 			enter_key_action(info, 1);
+			modified = 1;
 			break;
 		case CTRL_D: // ctrl-d
 			duplicate_line(info, 1);
+			modified = 1;
 			break;
         case CTRL_W:
             change_active_window(th);
             break;
 		case CTRL_X: // ctrl-x
 			delete_line(info, 1);
+			modified = 1;
 			break;
 		case CTRL_Z: // ctrl-z
 			if(info->ur_manager->stack_u->tail != NULL) {
@@ -366,10 +493,15 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
                         break;
                 }
 			}
+			modified = 1;
 			break;
 		default:
 			type_char(c, info, 1);
+			modified = 1;
 			break;
+	}
+	if(modified == 1) {
+		info->needs_saved = 1;
 	}
 }
 
@@ -419,6 +551,35 @@ void shift_down(unblind_info_t *info) {
 	info->cy++;
 	info->wcy++;
     unblind_scroll_vert_calc(info);
+}
+
+language_t get_file_type(unblind_info_t *info) {
+	int size = 1024;
+	char *buf = calloc(size, sizeof(char));
+	strcpy(buf, info->file_name);
+	strtok(buf, ".");
+	buf = strtok(NULL, ".");
+	if(strcmp(buf, "c") == 0) { //TODO add other language support
+		return C;
+	} else if(strcmp(buf, "js") == 0) {
+		return JS;
+	} else if(strcmp(buf, "py") == 0) {
+		return PYTHON;
+	}
+	return UNKNOWN;
+}
+
+color_t get_color(char *color) {
+	if(strcmp(color, "red") == 0) {
+		return RED;
+	} else if(strcmp(color, "blue") == 0) {
+		return BLUE;
+	} else if(strcmp(color, "green") == 0) {
+		return GREEN;
+	}  else if(strcmp(color, "magenta") == 0) {
+		return MAGENTA;
+	}
+	return 0;
 }
 
 int array_insert(char *a, int x, char c, int size)

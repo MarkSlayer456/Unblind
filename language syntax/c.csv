@@ -1,0 +1,15 @@
+.c,NULL
+tok,color
+{,red
+},red
+void,magenta
+int,magenta
+float,magenta
+char,magenta
+struct,magenta
+#define,green
+#include,green
+",magenta
+if,magenta
+switch,magenta
+return,magenta

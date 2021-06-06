@@ -42,6 +42,7 @@
 #define CTRL_B                        2
 #define CTRL_W                        23
 #define CTRL_E                        5
+#define ESC_KEY						  27
 
 #define FIND_STR_MAX_LENGTH           300
 #define MAX_MESSAGE_LENGTH            300
@@ -53,12 +54,35 @@ int INFO_SIZE;
 int WINDOW_HEIGHT;
 
 typedef enum {
+	RED = 1,
+	BLUE = 2,
+	GREEN = 3,
+	MAGENTA = 4
+} color_t;
+
+typedef enum {
+	UNKNOWN = 0,
+	C = 1,
+	JS = 2,
+	PYTHON = 3
+} language_t;
+
+typedef enum {
     FIND = 1,
     EDIT = 2,
     INSERT = 3,
     JUMP = 4,
-    CMD = 5
+    CMD = 5,
+	QUIT_SAVE = 6
 } unblind_mode_t;
+
+typedef struct parse_data {
+	char **words;
+	int size;
+	color_t *colors;
+	int colorCount;
+	int wordCount;
+} parse_data_t;
 
 // this struct is getting pretty big
 typedef struct unblind_info {
@@ -66,7 +90,11 @@ typedef struct unblind_info {
     int wincols;
     WINDOW *win;
     char *file_name;
+	int needs_saved;
+	int prompt_save;
     
+	parse_data_t *p_data;
+	
     int x_threshold;
     int y_threshold;
     
@@ -115,6 +143,8 @@ void manage_input(char *file_input, unblind_info_t *info, char c, th_info_t *th)
 void draw(unblind_info_t *info);
 
 // utils.c
+language_t get_file_type(unblind_info_t *info);
+color_t get_color(char *color);
 int array_insert(char *a, int x, char c, int size);
 void move_to_left(char *arr, int left, int size);
 void shift_up(unblind_info_t *info);

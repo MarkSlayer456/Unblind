@@ -9,6 +9,8 @@ void setup_unblind_info(unblind_info_t *info);
 void unblind_info_free(unblind_info_t **info);
 void unblind_info_free_mini(unblind_info_t *info);
 
+void parse_file(unblind_info_t *info);
+
 void shutdown(th_info_t *th);
 
 void reset_unblind_info_contents(unblind_info_t *info);

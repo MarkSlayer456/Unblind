@@ -2,7 +2,9 @@
 #include <ncurses.h>
 #include <string.h>
 #include <stdlib.h>
+#include <pwd.h>
 #include "unblind.h"
+#include "csv_parse.h"
 
 void reset_unblind_info_contents(unblind_info_t *info) 
 {
@@ -43,8 +45,11 @@ void setup_unblind_info(unblind_info_t *info)
     info->scroll_offset = 0;
     info->scrollX_offset = 0;
     info->m = EDIT;
+	info->needs_saved = 0;
+    info->prompt_save = 0;
     
-    
+	info->p_data = malloc(sizeof(parse_data_t));
+	
     info->file_name = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
     info->cmd = malloc(sizeof(char) * MAX_MESSAGE_LENGTH);
     
@@ -83,8 +88,10 @@ void unblind_info_free_mini(unblind_info_t *info)
     free(info->cmd);
     free(info->message);
     
-    linked_list_d_free(info->find, info->find->head);
-    free(info->find);
+	if(info->find != NULL) {
+		linked_list_d_free(info->find, info->find->head);
+		free(info->find);
+	}
     
     free(info->fstr);
     free(info->jstr);
@@ -97,6 +104,60 @@ void unblind_info_free_mini(unblind_info_t *info)
     free(info->size);
     
     free(info);
+}
+
+void parse_file(unblind_info_t *info) 
+{
+	language_t file_type = get_file_type(info);
+	csv_data_t data;
+	data.rows = 0;
+	data.cols = 0;
+	info->p_data->colorCount = 0;
+	info->p_data->wordCount = 0;
+	
+	char *file = malloc(4096 * sizeof(char));
+	
+	uid_t uid = getuid();
+	struct passwd *pw = getpwuid(uid);
+	strcat(file, pw->pw_dir);
+	strcat(file, "/.unblind/language-syntax/");
+	
+	switch(file_type) {
+		case C:
+			strcat(file, "c.csv");
+			data = parse(file);
+			break;
+		case JS:
+			strcat(file, "js.csv");
+			data = parse(file);
+			break;
+		case PYTHON:
+			strcat(file, "py.csv");
+			data = parse(file);
+			break;
+		case UNKNOWN:
+			return;
+	}
+	
+	free(file);
+	
+	int size = 1024;
+	info->p_data->words = malloc(size * sizeof(char *));
+	for(int i = 0; i < size; i++) {
+		info->p_data->words[i] = malloc(sizeof(char) * size);
+	}
+	info->p_data->colors = malloc(sizeof(color_t) * size);
+	for(int i = 0; i < data.rows; i++) {
+		for(int j = 0; j < data.cols; j++) {
+			if(j == 0) {
+				strcpy(info->p_data->words[info->p_data->wordCount], data.data[i][j]);
+				info->p_data->wordCount++;
+			} else {
+				info->p_data->colors[info->p_data->colorCount] = get_color(data.data[i][j]); 
+				info->p_data->colorCount++;
+			}
+		}
+	}
 }
 
 void unblind_info_free(th_info_t *th) 
