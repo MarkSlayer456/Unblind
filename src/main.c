@@ -118,7 +118,9 @@ int create_win(th_info_t *th)
         keypad(th->infos[th->windows]->win, FALSE);
         scrollok(th->infos[th->windows]->win, FALSE);
         raw();
-        
+		
+		parse_file(th->infos[th->windows]);
+		
         f = fopen(th->infos[th->windows]->file_name, "r");
         if(f != NULL) {
             read_contents_from_file(f, th->infos[th->windows]);
@@ -126,7 +128,6 @@ int create_win(th_info_t *th)
         if(strlen(current_line(th->infos[th->windows])) == 0) {
             current_line(th->infos[th->windows])[th->windows] = '\n';
         }
-        parse_file(th->infos[th->windows]);
         th->windows++;
         return 1;
     } else {
@@ -147,7 +148,14 @@ int create_win(th_info_t *th)
         th->infos[th->windows]->x_threshold = th->infos[th->windows]->wincols * .5;
         th->infos[th->windows]->y_threshold = th->infos[th->windows]->winlines * .5;
         
-        
+		noecho();
+		nodelay(th->infos[th->windows]->win, FALSE);
+		keypad(th->infos[th->windows]->win, FALSE);
+		scrollok(th->infos[th->windows]->win, FALSE);
+		raw();
+		
+		parse_file(th->infos[th->windows]);
+		
         f = fopen(th->infos[th->windows]->file_name, "r");
         if(f != NULL) {
             read_contents_from_file(f, th->infos[th->windows]);
@@ -155,13 +163,6 @@ int create_win(th_info_t *th)
         if(strlen(current_line(th->infos[th->windows])) == 0) {
             current_line(th->infos[th->windows])[th->windows] = '\n';
         }
-        
-        noecho();
-        nodelay(th->infos[th->windows]->win, FALSE);
-        keypad(th->infos[th->windows]->win, FALSE);
-        scrollok(th->infos[th->windows]->win, FALSE);
-        raw();
-		parse_file(th->infos[th->windows]);
 		th->windows++;
         return 1;
     }

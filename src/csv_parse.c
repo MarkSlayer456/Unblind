@@ -69,7 +69,7 @@ csv_data_t parse(char *file_name)
     csv.data = parse;
     csv.cols = cur;
     csv.rows = j;
-    
+    close(f);
 	return csv;
 }
 
