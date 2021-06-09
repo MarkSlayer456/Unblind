@@ -60,7 +60,7 @@ void draw(unblind_info_t *info) {
 								info->contents[i][j-1] != ')') continue;
 						}
 						int infront = j+len;
-						if(infront <= strlen(info->contents[i])) {
+						if(infront <= strlen(info->contents[i]) && (info->contents[i][j] != '"')) {
 							if(info->contents[i][infront] != ' ' &&
 								info->contents[i][infront] != '\t' &&
 								info->contents[i][infront] != '(' &&
