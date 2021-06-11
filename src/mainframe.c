@@ -135,6 +135,10 @@ void parse_file(unblind_info_t *info)
 			strcat(file, "py.csv");
 			data = parse(file);
 			break;
+		case JAVA:
+			strcat(file, "java.csv");
+			data = parse(file);
+			break;
 		case UNKNOWN:
 			return;
 	}

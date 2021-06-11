@@ -4,12 +4,17 @@ tok,color
 },red
 void,magenta
 int,magenta
+long,magenta
+double,magenta
 float,magenta
 char,magenta
 struct,magenta
+continue,red
+break,red
 #define,green
 #include,green
 ",magenta
+',magenta
 if,magenta
 switch,magenta
 return,magenta

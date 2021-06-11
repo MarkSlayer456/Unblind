@@ -64,7 +64,8 @@ typedef enum {
 	UNKNOWN = 0,
 	C = 1,
 	JS = 2,
-	PYTHON = 3
+	PYTHON = 3,
+	JAVA = 4
 } language_t;
 
 typedef enum {
