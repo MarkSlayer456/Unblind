@@ -430,21 +430,17 @@ void type_char(char c, unblind_info_t *info, int add_to_ur_manager) {
         	switch(c) {
         		case '(':
                     array_insert(info->contents[info->cy], info->cx, ')', info->size[info->cy]);
-        			break;
+					break;
         		case '[':
                     array_insert(info->contents[info->cy], info->cx, ']', info->size[info->cy]);
-        			break;
+					break;
         		case '{':
                     array_insert(info->contents[info->cy], info->cx, '}', info->size[info->cy]);
-        			break;
+					break;
         		case '\'':
         		case '"':
                     array_insert(info->contents[info->cy], info->cx, c, info->size[info->cy]);
-	       			break;
-        		case '<':
-                    array_insert(info->contents[info->cy], info->cx, '>', info->size[info->cy]);
-        			break;
-                
+					break;
         	}
         	if(strlen(info->contents[info->cy])+1 >= info->size[info->cy])  enlarge_characters_unblind_info(info, info->cy);
         }
