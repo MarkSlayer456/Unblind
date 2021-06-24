@@ -39,10 +39,13 @@ void draw(unblind_info_t *info) {
 	color_t color = 0;
 	int toggleColor = 0;
 	int y;
-    for(int i = info->scroll_offset; i <= info->scroll_offset + info->winlines; i++) {
+	int x;
+	int j;
+	int i;
+    for(i = info->scroll_offset; i < info->scroll_offset + info->winlines; i++) {
 		y = i - info->scroll_offset;
-		int x = 0;
-			for(int j = info->scrollX_offset; j <= info->scrollX_offset + info->wincols; j++) {
+		x = 0;
+			for(j = info->scrollX_offset; j < info->scrollX_offset + info->wincols-1; j++) {
 				x = j - info->scrollX_offset;
 				if(info->size[i] < j) break; // no need to draw
 				if(info->contents[i][0] == '\0') break;
@@ -118,6 +121,11 @@ void draw(unblind_info_t *info) {
 					break;
 				}
 			}
+	}
+	x = info->wincols-1;
+	for(int m = 0; m < y; m++) {
+		wmove(info->win, m, x);
+		waddch(info->win, '|');
 	}
 	wmove(info->win, info->winlines - 2, 0);
 	//wrefresh(info->win);
