@@ -559,6 +559,7 @@ language_t get_file_type(unblind_info_t *info) {
 	strcpy(buf, info->file_name);
 	strtok(buf, ".");
 	buf = strtok(NULL, ".");
+	if(buf == NULL) return UNKNOWN;
 	if(strcmp(buf, "c") == 0 || strcmp(buf, "h") == 0) { //TODO add other language support
 		return C;
 	} else if(strcmp(buf, "js") == 0) {
