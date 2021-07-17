@@ -94,7 +94,6 @@ void drawThread(void *argv)
         pthread_mutex_lock(th->lock);
         for(int i = 0; i < th->windows; i++) {
             werase(th->infos[i]->win);
-            wrefresh(th->infos[i]->win);
         }
         update_window_size(th);
         draw_all_screens(th);
