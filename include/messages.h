@@ -15,4 +15,9 @@
 
 #define SAVE_QUIT_MESG			   "Would you like to save your changes? (y, n, or esc):"
 
+#define C_CSV					   "c.csv"
+#define JS_CSV					   "js.csv"
+#define PY_CSV				       "py.csv"
+#define JAVA_CSV				   "java.csv"
+
 #endif

@@ -94,7 +94,13 @@ void move_cursor_down(unblind_info_t *info) {
 }
 
 void move_cursor_left(unblind_info_t *info) {
-	if(info->contents[info->cy][info->cx-1] == TAB_KEY) {
+	if(info->cx-1 == -1 && !(info->cy-1 <= -1)) {
+		--info->cy;
+		info->cx = strlen(current_line(info))-1;
+		info->wcy--;
+	} else if(info->cx-1 == -1) {
+		return;
+	} else if(info->contents[info->cy][info->cx-1] == TAB_KEY) {
         info->cx--;
         if(info->cx == 0) {
             move_cursor_up(info);
@@ -108,10 +114,6 @@ void move_cursor_left(unblind_info_t *info) {
         }
 	} else if(info->cx-1 != -1) {
 		info->cx--;
-	} else if(info->cx-1 == -1 && !(info->cy-1 <= -1)) {
-		--info->cy;
-		info->cx = strlen(current_line(info))-1;
-		info->wcy--;
 	}
 	unblind_scroll_vert_calc(info);
 	unblind_scroll_hor_calc(info);
@@ -230,6 +232,7 @@ void backspace_action(unblind_info_t *info, int add_to_ur_manager) {
 			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
 			char *del1 = &del;
 			node->c = (char *) malloc(sizeof(char)); // won't be used
+			memset(node->c, '\0', sizeof(char));
 			node->c = strdup(del1);
 			node->action = BACKSPACE_LAST_CHAR;
 			linked_list_d_add(info->ur_manager->stack_u, (void *) node, info->cx, info->cy);
@@ -262,6 +265,7 @@ void backspace_action(unblind_info_t *info, int add_to_ur_manager) {
 			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
 			char *del1 = &del;
 			node->c = (char *) malloc(sizeof(char)); // won't be used
+			memset(node->c, '\0', sizeof(char));
 			node->c = strdup(del1);
 			node->action = BACKSPACE;
 			linked_list_d_add(info->ur_manager->stack_u, (void *) node, info->cx, info->cy);

@@ -5,6 +5,7 @@
 #include <pwd.h>
 #include "unblind.h"
 #include "csv_parse.h"
+#include "messages.h"
 
 void reset_unblind_info_contents(unblind_info_t *info) 
 {
@@ -116,30 +117,36 @@ void parse_file(unblind_info_t *info)
 	info->p_data->wordCount = 0;
 	
 	char *file = malloc(4096 * sizeof(char));
+	memset(file, '\0', 4096 * sizeof(char));
 	
 	uid_t uid = getuid();
-	struct passwd *pw = getpwuid(uid);
+	struct passwd *pw = malloc(sizeof(struct passwd));
+	pw = getpwuid(uid);
+	if(pw == NULL) {
+		return;
+	}
 	strcat(file, pw->pw_dir);
 	strcat(file, "/.unblind/language-syntax/");
 	
 	switch(file_type) {
 		case C:
-			strcat(file, "c.csv");
+			strcat(file, C_CSV);
 			data = parse(file);
 			break;
 		case JS:
-			strcat(file, "js.csv");
+			strcat(file, JS_CSV);
 			data = parse(file);
 			break;
 		case PYTHON:
-			strcat(file, "py.csv");
+			strcat(file, PY_CSV);
 			data = parse(file);
 			break;
 		case JAVA:
-			strcat(file, "java.csv");
+			strcat(file, JAVA_CSV);
 			data = parse(file);
 			break;
 		case UNKNOWN:
+			free(file);
 			return;
 	}
 	
