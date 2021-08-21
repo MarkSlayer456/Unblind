@@ -138,11 +138,11 @@ void draw(unblind_info_t *info) {
 void read_contents_from_file(FILE *f, unblind_info_t *info) {
     int i = 0; // characters
     int j = 0; // lines
-	int amount_to_read = MAX_CHARS_PER_LINE;
+	int amount_to_read = info->max_chars_per_line;
 	char *str = malloc(sizeof(char) * amount_to_read);
 	
 	while(fgets(str, amount_to_read, f) != NULL) {
-		if(j+2 >= MAX_LINES) {
+		if(j+2 >= info->max_lines) {
         	enlarge_lines_unblind_info(info);
         }
         
@@ -161,7 +161,7 @@ void read_contents_from_file(FILE *f, unblind_info_t *info) {
 	
     fclose(f);
     free(str);
-    for(int k = 0; k < MAX_LINES-1; k++) {
+	for(int k = 0; k < info->max_lines-1; k++) {
         for(int l = 0; l < info->size[k]-1; l++) {
             if(info->contents[k][l] == '\0') break;
             if(info->contents[k][l] == TAB_KEY) {
@@ -178,7 +178,7 @@ void read_contents_from_file(FILE *f, unblind_info_t *info) {
 
 void write_contents_to_file(char *file_name, unblind_info_t *info) {
     FILE *fedit = fopen(file_name, "w+");
-    for(int i = 0; i < MAX_LINES; i++) {
+    for(int i = 0; i < info->max_lines; i++) {
 		char *str = info->contents[i];
 		for(int j = 0; j < strlen(str); j++) {
 			if(strlen(str) == 0) {
@@ -523,7 +523,7 @@ void shift_up(unblind_info_t *info) {
 	if(info->cy == 0 && info->contents[info->cy+1][0] == '\0') { // at the top of the file, return
 		return;
 	}
-	for(int i = info->cy+1; i < MAX_LINES; i++) {
+	for(int i = info->cy+1; i < info->max_lines; i++) {
 		if(info->contents[i][0] == '\0') {
 			break;
 		}
@@ -546,7 +546,7 @@ void shift_up(unblind_info_t *info) {
 }
 
 void shift_down(unblind_info_t *info) {
-	for(int i = MAX_LINES-1; i > info->cy; i--) {
+	for(int i = info->max_lines-1; i > info->cy; i--) {
         char *par1 = (char *)malloc(info->size[i-1] * sizeof(char));
         strcpy(par1, info->contents[i-1]);
         

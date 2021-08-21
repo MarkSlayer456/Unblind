@@ -24,7 +24,7 @@ void jump_to_start(unblind_info_t *info) {
 void jump_to_end(unblind_info_t *info) {
     int i = 0;
     
-    for(; i < MAX_LINES; i++) {
+	for(; i < info->max_lines; i++) {
         if(info->contents[i][0] == '\0') break;
     }
     i--;
@@ -157,7 +157,7 @@ void find_str(unblind_info_t *info) {
 
 		int find = hash(info->fstr);
 		int Fsize = strlen(info->fstr);
-        for(int j = 0; j < MAX_LINES; j++) {
+		for(int j = 0; j < info->max_lines; j++) {
 			if(Fsize == 1) {
                 for(int i = 0; i <= info->size[j]; i++) {
                     if(info->contents[j][i] == '\0') break;
@@ -215,7 +215,7 @@ void backspace_action(unblind_info_t *info, int add_to_ur_manager) {
 		
 		int new_length = len + strlen(next_line(info));
         
-        info->size[info->cy] = MAX_CHARS_PER_LINE;
+        info->size[info->cy] = info->max_chars_per_line;
         while(info->size[info->cy] < new_length) info->size[info->cy] *= 2;
         info->contents[info->cy] = realloc(info->contents[info->cy], info->size[info->cy] * sizeof(char));
 		
@@ -297,7 +297,7 @@ void enter_key_action(unblind_info_t *info, int add_to_ur_manager) {
 		
 		int store = info->size[info->cy];
 		
-        info->size[info->cy] = MAX_CHARS_PER_LINE; // reset size
+        info->size[info->cy] = info->max_chars_per_line; // reset size
         while(info->size[info->cy] < new_length) info->size[info->cy] *= 2; // find apporiate size
         
         info->contents[info->cy] = (char *)realloc(info->contents[info->cy], info->size[info->cy] * sizeof(char));
@@ -317,7 +317,7 @@ void enter_key_action(unblind_info_t *info, int add_to_ur_manager) {
 		
         
         
-		for(int k = MAX_LINES-1; k > info->cy; k--) {
+		for(int k = info->max_lines-1; k > info->cy; k--) {
             if(info->contents[k-1] == NULL) {
                 memset(info->contents[k], '\0', info->size[k] * sizeof(char));
 			} else {
@@ -353,7 +353,7 @@ void enter_key_action(unblind_info_t *info, int add_to_ur_manager) {
         }
 	}
 	
-	if(info->contents[MAX_LINES-1][0] != '\0') enlarge_lines_unblind_info(info);
+	if(info->contents[info->max_lines-1][0] != '\0') enlarge_lines_unblind_info(info);
     
 	unblind_scroll_vert_calc(info);
 	unblind_scroll_hor_calc(info);
@@ -673,7 +673,7 @@ void undo_delete_line(unblind_info_t *info, char *c, int x, int y) {
 		info->cy = y;
 	}
     int new_length = strlen(c);
-    info->size[info->cy] = MAX_CHARS_PER_LINE;
+    info->size[info->cy] = info->max_chars_per_line;
     while(info->size[info->cy] < new_length) info->size[info->cy] *= 2;
 
     strcpy(info->contents[info->cy], c);

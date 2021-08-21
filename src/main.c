@@ -15,11 +15,6 @@
 #include "messages.h"
 
 int main(int argc, char *argv[]) {
-	MAX_LINES = 4096;
-	MAX_CHARS_PER_LINE = 256;
-	INFO_SIZE = MAX_LINES * MAX_CHARS_PER_LINE * 2; // TODO this can probably be a lot smaller
-	WINDOW_HEIGHT = LINES_PER_WINDOW*2;
-    
     int windows = 0;
     int activeWin = 0;
     unblind_info_t **infos = (unblind_info_t **) malloc(sizeof(unblind_info_t *) * MAX_WINDOWS);

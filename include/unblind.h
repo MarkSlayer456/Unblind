@@ -47,16 +47,8 @@
 #define FIND_STR_MAX_LENGTH           300
 #define MAX_MESSAGE_LENGTH            300
 #define MAX_JUMP_STR_LENGTH           300
-
-extern int MAX_LINES;
-extern int MAX_CHARS_PER_LINE;
-extern int INFO_SIZE;
-extern int WINDOW_HEIGHT;
-
-int MAX_LINES;
-int MAX_CHARS_PER_LINE;
-int INFO_SIZE;
-int WINDOW_HEIGHT;
+#define DEFAULT_MAX_CHARS_PER_LINE	  256
+#define DEFAULT_MAX_LINES			  4096
 
 typedef enum {
 	RED = 1,
@@ -98,6 +90,9 @@ typedef struct unblind_info {
     char *file_name;
 	int needs_saved;
 	int prompt_save;
+	
+	int max_lines;
+	int max_chars_per_line;
     
 	parse_data_t *p_data;
 	

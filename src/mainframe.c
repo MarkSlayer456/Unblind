@@ -9,7 +9,7 @@
 
 void reset_unblind_info_contents(unblind_info_t *info) 
 {
-    for(int j = 0; j < MAX_LINES-1; j++) {
+    for(int j = 0; j < info->max_lines-1; j++) {
         if(info->contents[j] == NULL) break;
         for(int i = strlen(info->contents[j]); i < info->size[j]; ++i) {
             info->contents[j][i] = '\0';
@@ -26,11 +26,11 @@ void enlarge_characters_unblind_info(unblind_info_t *info, int y)
 
 void enlarge_lines_unblind_info(unblind_info_t *info) 
 {
-    MAX_LINES *= 2;
-    info->contents = (char **)realloc(info->contents, MAX_LINES * sizeof(char *));
-    info->size = (int *) realloc(info->size, MAX_LINES * sizeof(int));
-    for(int i = (MAX_LINES/2); i < MAX_LINES; i++) {
-        info->size[i] = MAX_CHARS_PER_LINE;
+    info->max_lines *= 2;
+	info->contents = (char **)realloc(info->contents, info->max_lines * sizeof(char *));
+	info->size = (int *) realloc(info->size, info->max_lines * sizeof(int));
+	for(int i = (info->max_lines/2); i < info->max_lines; i++) {
+		info->size[i] = info->max_chars_per_line;
         info->contents[i] = (char *)malloc(info->size[i] * sizeof(char));
 //         info->contents[i] = (char *)realloc(info->contents[i], info->size[i] * sizeof(char));
         memset(info->contents[i], 0, info->size[i] * sizeof(char));
@@ -48,6 +48,8 @@ void setup_unblind_info(unblind_info_t *info)
     info->m = EDIT;
 	info->needs_saved = 0;
     info->prompt_save = 0;
+	info->max_lines = DEFAULT_MAX_LINES;
+	info->max_chars_per_line = DEFAULT_MAX_CHARS_PER_LINE;
     
 	info->p_data = malloc(sizeof(parse_data_t));
 	
@@ -67,12 +69,12 @@ void setup_unblind_info(unblind_info_t *info)
     info->jstr = (char *)malloc(MAX_JUMP_STR_LENGTH * sizeof(char));
     
     memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
-    info->contents = (char **)malloc(MAX_LINES * sizeof(char *));
-    info->size = (int *) malloc(MAX_LINES * sizeof(int));
-    for(int i = 0; i < MAX_LINES; i++) {
-        info->size[i] = MAX_CHARS_PER_LINE;
-        info->contents[i] = (char *)malloc(MAX_CHARS_PER_LINE * sizeof(char));
-        memset(info->contents[i], 0, MAX_CHARS_PER_LINE * sizeof(char));
+	info->contents = (char **)malloc(info->max_lines * sizeof(char *));
+	info->size = (int *) malloc(info->max_lines * sizeof(int));
+	for(int i = 0; i < info->max_lines; i++) {
+		info->size[i] = info->max_chars_per_line;
+		info->contents[i] = (char *)malloc(info->max_chars_per_line * sizeof(char));
+		memset(info->contents[i], 0, info->max_chars_per_line * sizeof(char));
     }
 }
 
@@ -97,7 +99,7 @@ void unblind_info_free_mini(unblind_info_t *info)
     free(info->fstr);
     free(info->jstr);
     
-    for(int j = 0; j < MAX_LINES; j++) {
+    for(int j = 0; j < info->max_lines; j++) {
         if(info->contents[j])
             free(info->contents[j]);
     }
