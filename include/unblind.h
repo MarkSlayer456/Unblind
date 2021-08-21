@@ -48,6 +48,11 @@
 #define MAX_MESSAGE_LENGTH            300
 #define MAX_JUMP_STR_LENGTH           300
 
+extern int MAX_LINES;
+extern int MAX_CHARS_PER_LINE;
+extern int INFO_SIZE;
+extern int WINDOW_HEIGHT;
+
 int MAX_LINES;
 int MAX_CHARS_PER_LINE;
 int INFO_SIZE;
