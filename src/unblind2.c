@@ -72,7 +72,10 @@ void draw(unblind_info_t *info) {
 								info->contents[i][infront] != '(' &&
 								info->contents[i][infront] != ')' &&
 								info->contents[i][infront] != '\n' &&
-								info->contents[i][infront] != '\0') {
+								info->contents[i][infront] != '\0' &&
+								info->contents[i][infront] != '[' &&
+								info->contents[i][infront] != ']' &&
+								info->contents[i][infront] != ';') {
 								free(tmp);
 								continue;
 							}
@@ -310,7 +313,6 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 	} else if(info->m == QUIT_SAVE) {
 		// move cursor to end of current string
 		info->wcx = strlen(info->message);
-		info->prompt_save = 0;
 		if(c == 'y' && info->message[info->wcx-1] != 'y' && info->message[info->wcx-1] != 'n') {
 			info->message[info->wcx++] = 'y';
 			info->prompt_save = 1;

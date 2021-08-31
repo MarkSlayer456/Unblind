@@ -91,8 +91,8 @@ typedef struct unblind_info {
 	int needs_saved;
 	int prompt_save;
 	
-	int max_lines;
-	int max_chars_per_line;
+	long long int max_lines;
+	long long int *size;  // int max_chars_per_line; change the name to max_chars_per_line
     
 	parse_data_t *p_data;
 	
@@ -107,9 +107,7 @@ typedef struct unblind_info {
     int wcy;
     
     char **contents;
-    int *size;
     char *message;
-    
     char *cmd;
     
     d_linked_list_t *find;
