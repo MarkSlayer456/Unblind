@@ -28,11 +28,10 @@ void enlarge_lines_unblind_info(unblind_info_t *info)
 {
     info->max_lines *= 2;
 	info->contents = (char **)realloc(info->contents, info->max_lines * sizeof(char *));
-	info->size = (int *) realloc(info->size, info->max_lines * sizeof(int));
-	for(int i = (info->max_lines/2); i < info->max_lines; i++) {
-		info->size[i] = info->max_chars_per_line;
+	info->size = realloc(info->size, info->max_lines * sizeof(long long int));
+	for(long long int i = (info->max_lines/2); i < info->max_lines; i++) {
+		info->size[i] = DEFAULT_MAX_CHARS_PER_LINE;
         info->contents[i] = (char *)malloc(info->size[i] * sizeof(char));
-//         info->contents[i] = (char *)realloc(info->contents[i], info->size[i] * sizeof(char));
         memset(info->contents[i], 0, info->size[i] * sizeof(char));
     }
 }
@@ -49,7 +48,7 @@ void setup_unblind_info(unblind_info_t *info)
 	info->needs_saved = 0;
     info->prompt_save = 0;
 	info->max_lines = DEFAULT_MAX_LINES;
-	info->max_chars_per_line = DEFAULT_MAX_CHARS_PER_LINE;
+// 	info->max_chars_per_line = DEFAULT_MAX_CHARS_PER_LINE;
     
 	info->p_data = malloc(sizeof(parse_data_t));
 	
@@ -70,11 +69,10 @@ void setup_unblind_info(unblind_info_t *info)
     
     memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
 	info->contents = (char **)malloc(info->max_lines * sizeof(char *));
-	info->size = (int *) malloc(info->max_lines * sizeof(int));
+	info->size = malloc(info->max_lines * sizeof(long long int));
 	for(int i = 0; i < info->max_lines; i++) {
-		info->size[i] = info->max_chars_per_line;
-		info->contents[i] = (char *)malloc(info->max_chars_per_line * sizeof(char));
-		memset(info->contents[i], 0, info->max_chars_per_line * sizeof(char));
+		info->size[i] = DEFAULT_MAX_CHARS_PER_LINE;
+		info->contents[i] = calloc(info->size[i], sizeof(char));
     }
 }
 
@@ -90,11 +88,20 @@ void unblind_info_free_mini(unblind_info_t *info)
     free(info->file_name);
     free(info->cmd);
     free(info->message);
-    
-	if(info->find != NULL) {
-		linked_list_d_free(info->find, info->find->head);
-		free(info->find);
+	
+	int size = 1024;
+	if(info->p_data->words != NULL) {
+		for(int i = 0; i < size; i++) {
+			free(info->p_data->words[i]);
+		}
+		free(info->p_data->words);
+		free(info->p_data->colors);
 	}
+	
+	free(info->p_data);
+    
+	linked_list_d_free(info->find, info->find->head);
+	free(info->find);
     
     free(info->fstr);
     free(info->jstr);
@@ -118,11 +125,10 @@ void parse_file(unblind_info_t *info)
 	info->p_data->colorCount = 0;
 	info->p_data->wordCount = 0;
 	
-	char *file = malloc(4096 * sizeof(char));
-	memset(file, '\0', 4096 * sizeof(char));
+	char *file = calloc(4096, sizeof(char));
 	
 	uid_t uid = getuid();
-	struct passwd *pw = malloc(sizeof(struct passwd));
+	struct passwd *pw;
 	pw = getpwuid(uid);
 	if(pw == NULL) {
 		return;
@@ -148,6 +154,8 @@ void parse_file(unblind_info_t *info)
 			data = parse(file);
 			break;
 		case UNKNOWN:
+			info->p_data->words = NULL;
+			info->p_data->colors = NULL;
 			free(file);
 			return;
 	}
@@ -155,11 +163,11 @@ void parse_file(unblind_info_t *info)
 	free(file);
 	
 	int size = 1024;
-	info->p_data->words = malloc(size * sizeof(char *));
+	info->p_data->words = calloc(size, sizeof(char *));
 	for(int i = 0; i < size; i++) {
-		info->p_data->words[i] = malloc(sizeof(char) * size);
+		info->p_data->words[i] = calloc(size, sizeof(char));
 	}
-	info->p_data->colors = malloc(sizeof(color_t) * size);
+	info->p_data->colors = calloc(size, sizeof(color_t));
 	for(int i = 0; i < data.rows; i++) {
 		for(int j = 0; j < data.cols; j++) {
 			if(j == 0) {

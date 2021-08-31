@@ -38,10 +38,10 @@ void draw(unblind_info_t *info) {
 	
 	color_t color = 0;
 	int toggleColor = 0;
-	int y;
-	int x;
-	int j;
-	int i;
+	long long int y;
+	long long int x;
+	long long int j;
+	long long int i;
     for(i = info->scroll_offset; i < info->scroll_offset + info->winlines; i++) {
 		y = i - info->scroll_offset;
 		x = 0;
@@ -53,14 +53,17 @@ void draw(unblind_info_t *info) {
 				if(toggleColor == 0) {
 					for(int k = 0; k < info->p_data->wordCount; k++) {
 						int len = strlen(info->p_data->words[k]);
-						char *tmp = malloc(len+1 * sizeof(char));
-						tmp[len+1] = '\0';
+						char *tmp = calloc(len+1, sizeof(char));
+// 						tmp[len+1] = '\0';
 						if(j > 0 && (info->contents[i][j] != '"')) {
 							// checks to make sure the word is stand alone
 							if(info->contents[i][j-1] != ' ' &&
 								info->contents[i][j-1] != '\t' &&
 								info->contents[i][j-1] != '(' &&
-								info->contents[i][j-1] != ')') continue;
+								info->contents[i][j-1] != ')')  {
+									free(tmp);
+									continue;
+							}
 						}
 						int infront = j+len;
 						if(infront <= strlen(info->contents[i]) && (info->contents[i][j] != '"')) {
@@ -70,6 +73,7 @@ void draw(unblind_info_t *info) {
 								info->contents[i][infront] != ')' &&
 								info->contents[i][infront] != '\n' &&
 								info->contents[i][infront] != '\0') {
+								free(tmp);
 								continue;
 							}
 						}
@@ -78,6 +82,7 @@ void draw(unblind_info_t *info) {
 							color = info->p_data->colors[k];
 							toggleColor = len;
 						}
+						free(tmp);
 					}
 				}
 				
@@ -136,9 +141,9 @@ void draw(unblind_info_t *info) {
 }
 
 void read_contents_from_file(FILE *f, unblind_info_t *info) {
-    int i = 0; // characters
-    int j = 0; // lines
-	int amount_to_read = info->max_chars_per_line;
+    long long int i = 0; // characters
+    long long int j = 0; // lines
+	int amount_to_read = DEFAULT_MAX_CHARS_PER_LINE-2;
 	char *str = malloc(sizeof(char) * amount_to_read);
 	
 	while(fgets(str, amount_to_read, f) != NULL) {
@@ -147,6 +152,7 @@ void read_contents_from_file(FILE *f, unblind_info_t *info) {
         }
         
         int sizeStr = strlen(str) + 1;
+		if(sizeStr <= 1) continue;
         if(str[strlen(str) - 1] == '\n') {
  			strcat(info->contents[j], str);
 			i = 0;
@@ -563,21 +569,24 @@ void shift_down(unblind_info_t *info) {
 
 language_t get_file_type(unblind_info_t *info) {
 	int size = 1024;
-	char *buf = calloc(size, sizeof(char));
-	strcpy(buf, info->file_name);
-	strtok(buf, ".");
-	buf = strtok(NULL, ".");
-	if(buf == NULL) return UNKNOWN;
+	char *tmp = calloc(size, sizeof(char));
+	strcpy(tmp, info->file_name);
+	strtok(tmp, ".");
+	char *buf = strtok(NULL, ".");
+	language_t result = UNKNOWN;
+	if(buf == NULL) return result;
 	if(strcmp(buf, "c") == 0 || strcmp(buf, "h") == 0) { //TODO add other language support
-		return C;
+		result = C;
 	} else if(strcmp(buf, "js") == 0) {
-		return JS;
+		result = JS;
 	} else if(strcmp(buf, "py") == 0) {
-		return PYTHON;
+		result = PYTHON;
 	} else if(strcmp(buf, "java") == 0) {
-		return JAVA;
+		result = JAVA;
 	}
-	return UNKNOWN;
+	
+	free(tmp);
+	return result;
 }
 
 color_t get_color(char *color) {

@@ -215,7 +215,7 @@ void backspace_action(unblind_info_t *info, int add_to_ur_manager) {
 		
 		int new_length = len + strlen(next_line(info));
         
-        info->size[info->cy] = info->max_chars_per_line;
+        info->size[info->cy] = DEFAULT_MAX_CHARS_PER_LINE;
         while(info->size[info->cy] < new_length) info->size[info->cy] *= 2;
         info->contents[info->cy] = realloc(info->contents[info->cy], info->size[info->cy] * sizeof(char));
 		
@@ -297,7 +297,7 @@ void enter_key_action(unblind_info_t *info, int add_to_ur_manager) {
 		
 		int store = info->size[info->cy];
 		
-        info->size[info->cy] = info->max_chars_per_line; // reset size
+		info->size[info->cy] = DEFAULT_MAX_CHARS_PER_LINE; // reset size
         while(info->size[info->cy] < new_length) info->size[info->cy] *= 2; // find apporiate size
         
         info->contents[info->cy] = (char *)realloc(info->contents[info->cy], info->size[info->cy] * sizeof(char));
@@ -522,56 +522,70 @@ void move_line_down(unblind_info_t *info, int add_to_ur_manager) {
     if(info->contents[info->cy+1][0] == '\0') {
         return;
     }
-    char *tmp = malloc(info->size[info->cy] * sizeof(char));
+    char *tmp = calloc(info->size[info->cy], sizeof(char));
+    char *tmp2 = calloc(info->size[info->cy+1], sizeof(char));
     strcpy(tmp, info->contents[info->cy]);
-    int tmpSize = info->size[info->cy];
+	strcpy(tmp2, info->contents[info->cy+1]);
+    long long int tmpSize = info->size[info->cy];
     
     info->size[info->cy] = info->size[info->cy+1];
     info->size[info->cy+1] = tmpSize;
-    
     
     info->contents[info->cy] = realloc(info->contents[info->cy], info->size[info->cy]);
     info->contents[info->cy+1] = realloc(info->contents[info->cy+1], info->size[info->cy+1]);
     
     
-    strcpy(info->contents[info->cy], info->contents[info->cy+1]);
+    strcpy(info->contents[info->cy], tmp2);
     strcpy(info->contents[info->cy+1], tmp);
-    
+	memset(info->contents[info->cy]+strlen(tmp2), '\0', info->size[info->cy] - strlen(tmp2));
+	memset(info->contents[info->cy-1]+strlen(tmp), '\0', info->size[info->cy+1] - strlen(tmp));
+	
+	free(tmp);
+	free(tmp2);
+	
     info->cy++;
     unblind_scroll_hor_calc(info);
     unblind_scroll_vert_calc(info);
-    int x = info->cx;
-    int y = info->cy;
-    if(add_to_ur_manager == 1) { // TODO tmp isn't defined
+	
+    if(add_to_ur_manager == 1) {
+		int x = info->cx;
+		int y = info->cy;
         ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
         node->action = MOVE_LINE_DOWN;
         linked_list_d_add(info->ur_manager->stack_u, (void *) node, x, y);
     }
 }
 
-void move_line_up(unblind_info_t *info, int add_to_ur_manager) {
+void move_line_up(unblind_info_t *info, int add_to_ur_manager) { //TODO change move_line_down to this format looks cleaner
     if(info->cy == 0) { // can't move up from here
         return;
     }
-    char *tmp = malloc(info->size[info->cy] * sizeof(char));
+    char *tmp = calloc(info->size[info->cy], sizeof(char));
+	char *tmp2 = calloc(info->size[info->cy-1], sizeof(char));
     strcpy(tmp, info->contents[info->cy]);
-    int tmpSize = info->size[info->cy];
-    
-    info->size[info->cy] = info->size[info->cy-1];
-    info->size[info->cy-1] = tmpSize;
-    
-    info->contents[info->cy] = realloc(info->contents[info->cy], info->size[info->cy]);
-    info->contents[info->cy-1] = realloc(info->contents[info->cy-1], info->size[info->cy-1]);
-    
-    strcpy(info->contents[info->cy], info->contents[info->cy-1]);
+	strcpy(tmp2, info->contents[info->cy-1]);
+	
+	long long int tmpSize = info->size[info->cy];
+	
+	info->size[info->cy] = info->size[info->cy+1];
+	info->size[info->cy-1] = tmpSize;
+	
+	info->contents[info->cy] = realloc(info->contents[info->cy], info->size[info->cy]);
+	info->contents[info->cy-1] = realloc(info->contents[info->cy-1], info->size[info->cy-1]);
+	
+    strcpy(info->contents[info->cy], tmp2);
     strcpy(info->contents[info->cy-1], tmp);
-    
+	memset(info->contents[info->cy]+strlen(tmp2), '\0', info->size[info->cy] - strlen(tmp2));
+	memset(info->contents[info->cy-1]+strlen(tmp), '\0', info->size[info->cy-1] - strlen(tmp));
+    free(tmp);
+	free(tmp2);
     info->cy--;
     unblind_scroll_hor_calc(info);
     unblind_scroll_vert_calc(info);
-    int x = info->cx;
-    int y = info->cy;
-    if(add_to_ur_manager == 1) { // TODO tmp isn't defined
+	
+    if(add_to_ur_manager == 1) {
+		int x = info->cx;
+		int y = info->cy;
         ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
         node->action = MOVE_LINE_UP;
         linked_list_d_add(info->ur_manager->stack_u, (void *) node, x, y);
@@ -673,7 +687,7 @@ void undo_delete_line(unblind_info_t *info, char *c, int x, int y) {
 		info->cy = y;
 	}
     int new_length = strlen(c);
-    info->size[info->cy] = info->max_chars_per_line;
+    info->size[info->cy] = DEFAULT_MAX_CHARS_PER_LINE;
     while(info->size[info->cy] < new_length) info->size[info->cy] *= 2;
 
     strcpy(info->contents[info->cy], c);

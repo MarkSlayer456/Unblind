@@ -120,7 +120,8 @@ int create_win(th_info_t *th)
             read_contents_from_file(f, th->infos[th->windows]);
         }
         if(strlen(current_line(th->infos[th->windows])) == 0) {
-            current_line(th->infos[th->windows])[th->windows] = '\n';
+            memset(th->infos[th->windows]->contents[0], '\0', th->infos[th->windows]->size[th->infos[th->windows]->cy]);
+			current_line(th->infos[th->windows])[0] = '\n'; // current_line(th->infos[th->windows])[th->windows] = '\n';
         }
         th->windows++;
         return 1;
@@ -155,7 +156,8 @@ int create_win(th_info_t *th)
             read_contents_from_file(f, th->infos[th->windows]);
         }
         if(strlen(current_line(th->infos[th->windows])) == 0) {
-            current_line(th->infos[th->windows])[th->windows] = '\n';
+			memset(th->infos[th->windows]->contents[0], '\0', th->infos[th->windows]->size[th->infos[th->windows]->cy]);
+			current_line(th->infos[th->windows])[0] = '\n';
         }
 		th->windows++;
         return 1;

@@ -23,6 +23,7 @@ csv_data_t parse(char *file_name)
         strncat(wholefile, buf, K);
 		r = read(f, buf, K);
 	}
+	free(buf);
 	
 	
     int lines_size = 16;
@@ -70,6 +71,11 @@ csv_data_t parse(char *file_name)
     csv.cols = cur;
     csv.rows = j;
     close(f);
+	free(wholefile);
+	for(int j = 0; j < i; j++) {
+		free(lines[j]);
+	}
+	free(lines);
 	return csv;
 }
 
