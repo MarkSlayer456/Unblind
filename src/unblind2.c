@@ -214,8 +214,6 @@ void update_cursor_pos(unblind_info_t *info) {
     } else {
         mvwprintw(info->win, info->winlines - 1, info->wincols - 15, "char: %c", info->contents[info->cy][info->cx]);
     }
-    
-	wrefresh(info->win);
 }
 
 void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) {
