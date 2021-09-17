@@ -431,21 +431,23 @@ void type_char(char c, unblind_info_t *info, int add_to_ur_manager) {
 			info->wcx++;
             unblind_scroll_hor_calc(info);
 			// auto completion for ()'s and such
-        	switch(c) {
-        		case '(':
-                    array_insert(info->contents[info->cy], info->cx, ')', info->size[info->cy]);
-					break;
-        		case '[':
-                    array_insert(info->contents[info->cy], info->cx, ']', info->size[info->cy]);
-					break;
-        		case '{':
-                    array_insert(info->contents[info->cy], info->cx, '}', info->size[info->cy]);
-					break;
-        		case '\'':
-        		case '"':
-                    array_insert(info->contents[info->cy], info->cx, c, info->size[info->cy]);
-					break;
-        	}
+			if(add_to_ur_manager == 1) {
+				switch(c) {
+					case '(':
+						array_insert(info->contents[info->cy], info->cx, ')', info->size[info->cy]);
+						break;
+					case '[':
+						array_insert(info->contents[info->cy], info->cx, ']', info->size[info->cy]);
+						break;
+					case '{':
+						array_insert(info->contents[info->cy], info->cx, '}', info->size[info->cy]);
+						break;
+					case '\'':
+					case '"':
+						array_insert(info->contents[info->cy], info->cx, c, info->size[info->cy]);
+						break;
+				}
+			}
         	if(strlen(info->contents[info->cy])+1 >= info->size[info->cy])  enlarge_characters_unblind_info(info, info->cy);
         }
         strcpy(info->message, "");
@@ -538,7 +540,7 @@ void move_line_down(unblind_info_t *info, int add_to_ur_manager) {
     strcpy(info->contents[info->cy], tmp2);
     strcpy(info->contents[info->cy+1], tmp);
 	memset(info->contents[info->cy]+strlen(tmp2), '\0', info->size[info->cy] - strlen(tmp2));
-	memset(info->contents[info->cy-1]+strlen(tmp), '\0', info->size[info->cy+1] - strlen(tmp));
+	memset(info->contents[info->cy+1]+strlen(tmp), '\0', info->size[info->cy+1] - strlen(tmp));
 	
 	free(tmp);
 	free(tmp2);
