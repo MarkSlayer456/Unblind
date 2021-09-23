@@ -156,6 +156,7 @@ void read_contents_from_file(FILE *f, unblind_info_t *info) {
         
         int sizeStr = strlen(str) + 1;
 		if(sizeStr <= 1) continue;
+		if(strlen(info->contents[j]) + sizeStr + 1 >= info->size[j])  enlarge_characters_unblind_info(info, j);
         if(str[strlen(str) - 1] == '\n') {
  			strcat(info->contents[j], str);
 			i = 0;
@@ -164,7 +165,6 @@ void read_contents_from_file(FILE *f, unblind_info_t *info) {
 			i += sizeStr;
 			strcat(info->contents[j], str);
 		}
-		if(strlen(info->contents[j]) + sizeStr + 1 >= info->size[j])  enlarge_characters_unblind_info(info, j);
 		
 	}
 	
