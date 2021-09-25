@@ -31,6 +31,83 @@ void unblind_scroll_hor_calc(unblind_info_t *info) {
     info->wcx = info->cx-info->scrollX_offset;
 }
 
+int enable_color(unblind_info_t *info, color_t color)
+{
+	switch(color) {
+		case RED:
+			wattron(info->win, COLOR_PAIR(3));
+			break;
+		case MAGENTA:
+			wattron(info->win, COLOR_PAIR(2));
+			break;
+		case GREEN:
+			wattron(info->win, COLOR_PAIR(4));
+			break;
+		case BLUE:
+			wattron(info->win, COLOR_PAIR(5));
+			break;
+	}
+}
+int disable_color(unblind_info_t *info, color_t color)
+{
+	switch(color) {
+		case RED:
+			wattroff(info->win, COLOR_PAIR(3));
+			break;
+		case MAGENTA:
+			wattroff(info->win, COLOR_PAIR(2));
+			break;
+		case GREEN:
+			wattroff(info->win, COLOR_PAIR(4));
+			break;
+		case BLUE:
+			wattroff(info->win, COLOR_PAIR(5));
+			break;
+	}
+}
+
+int draw_find_syntax_highlight(unblind_info_t *info, color_t *color, int *toggleColor, int i, int j)
+{
+	if(*toggleColor == 0) {
+		for(int k = 0; k < info->p_data->wordCount; k++) {
+			int len = strlen(info->p_data->words[k]);
+			char *tmp = calloc(len+1, sizeof(char));
+			if(j > 0 && (info->contents[i][j] != '"')) {
+				// checks to make sure the word is stand alone
+				if(info->contents[i][j-1] != ' ' &&
+					info->contents[i][j-1] != '\t' &&
+					info->contents[i][j-1] != '(' &&
+					info->contents[i][j-1] != ')')  {
+					free(tmp);
+					continue;
+					}
+			}
+			int infront = j+len;
+			if(infront <= strlen(info->contents[i]) && (info->contents[i][j] != '"')) {
+				if(info->contents[i][infront] != ' ' &&
+					info->contents[i][infront] != '\t' &&
+					info->contents[i][infront] != '(' &&
+					info->contents[i][infront] != ')' &&
+					info->contents[i][infront] != '\n' &&
+					info->contents[i][infront] != '\0' &&
+					info->contents[i][infront] != '[' &&
+					info->contents[i][infront] != ']' &&
+					info->contents[i][infront] != ';') {
+					free(tmp);
+					continue;
+					}
+			}
+			strncpy(tmp, info->contents[i]+j, len);
+			if(strncmp(tmp, info->p_data->words[k], len) == 0) {
+				*color = info->p_data->colors[k];
+				*toggleColor = len;
+				break; // match found no need to scan for others
+			}
+			free(tmp);
+		}
+	}
+}
+
 
 void draw(unblind_info_t *info) {
 	if(!info->contents) return;
@@ -38,10 +115,7 @@ void draw(unblind_info_t *info) {
 	
 	color_t color = 0;
 	int toggleColor = 0;
-	long long int y;
-	long long int x;
-	long long int j;
-	long long int i;
+	long long int x, y, j, i;
     for(i = info->scroll_offset; i < info->scroll_offset + info->winlines; i++) {
 		y = i - info->scroll_offset;
 		x = 0;
@@ -50,78 +124,17 @@ void draw(unblind_info_t *info) {
 				if(info->size[i] < j) break; // no need to draw
 				if(info->contents[i][0] == '\0') break;
 				
-				if(toggleColor == 0) {
-					for(int k = 0; k < info->p_data->wordCount; k++) {
-						int len = strlen(info->p_data->words[k]);
-						char *tmp = calloc(len+1, sizeof(char));
-// 						tmp[len+1] = '\0';
-						if(j > 0 && (info->contents[i][j] != '"')) {
-							// checks to make sure the word is stand alone
-							if(info->contents[i][j-1] != ' ' &&
-								info->contents[i][j-1] != '\t' &&
-								info->contents[i][j-1] != '(' &&
-								info->contents[i][j-1] != ')')  {
-									free(tmp);
-									continue;
-							}
-						}
-						int infront = j+len;
-						if(infront <= strlen(info->contents[i]) && (info->contents[i][j] != '"')) {
-							if(info->contents[i][infront] != ' ' &&
-								info->contents[i][infront] != '\t' &&
-								info->contents[i][infront] != '(' &&
-								info->contents[i][infront] != ')' &&
-								info->contents[i][infront] != '\n' &&
-								info->contents[i][infront] != '\0' &&
-								info->contents[i][infront] != '[' &&
-								info->contents[i][infront] != ']' &&
-								info->contents[i][infront] != ';') {
-								free(tmp);
-								continue;
-							}
-						}
-						strncpy(tmp, info->contents[i]+j, len);
-						if(strncmp(tmp, info->p_data->words[k], len) == 0) {
-							color = info->p_data->colors[k];
-							toggleColor = len;
-						}
-						free(tmp);
-					}
-				}
+				draw_find_syntax_highlight(info, &color, &toggleColor, i, j);
 				
 				if(info->contents[i][j] != '\0') {
 					// bottom two lines are used for messages and other things
 					if(y <= info->winlines - PROTECTED_LINES) {
-						switch(color) {
-							case RED:
-								wattron(info->win, COLOR_PAIR(3));
-								break;
-							case MAGENTA:
-								wattron(info->win, COLOR_PAIR(2));
-								break;
-							case GREEN:
-								wattron(info->win, COLOR_PAIR(4));
-								break;
-							case BLUE:
-								wattron(info->win, COLOR_PAIR(5));
-								break;
-						}
+						enable_color(info, color);
+						
 						wmove(info->win, y, x);
 						waddch(info->win, info->contents[i][j]);
-						switch(color) {
-							case RED:
-								wattroff(info->win, COLOR_PAIR(3));
-								break;
-							case MAGENTA:
-								wattroff(info->win, COLOR_PAIR(2));
-								break;
-							case GREEN:
-								wattroff(info->win, COLOR_PAIR(4));
-								break;
-							case BLUE:
-								wattroff(info->win, COLOR_PAIR(5));
-								break;
-						}
+						
+						disable_color(info, color);
 					}
 					if(toggleColor > 0) toggleColor--;
 					if(toggleColor == 0) color = 0;
