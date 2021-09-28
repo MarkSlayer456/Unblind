@@ -200,6 +200,7 @@ void read_contents_from_file(FILE *f, unblind_info_t *info) {
 
 void write_contents_to_file(char *file_name, unblind_info_t *info) {
     FILE *fedit = fopen(file_name, "w+");
+	if(fedit == NULL) return;
     for(int i = 0; i < info->max_lines; i++) {
 		char *str = info->contents[i];
 		for(int j = 0; j < strlen(str); j++) {

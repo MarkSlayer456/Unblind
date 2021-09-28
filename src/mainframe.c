@@ -68,7 +68,7 @@ void setup_unblind_info(unblind_info_t *info)
     info->jstr = (char *)malloc(MAX_JUMP_STR_LENGTH * sizeof(char));
     
     memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
-	info->contents = (char **)malloc(info->max_lines * sizeof(char *));
+	info->contents = calloc(info->max_lines, sizeof(char *));
 	info->size = malloc(info->max_lines * sizeof(long long int));
 	for(int i = 0; i < info->max_lines; i++) {
 		info->size[i] = DEFAULT_MAX_CHARS_PER_LINE;
