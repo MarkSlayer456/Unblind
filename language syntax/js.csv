@@ -2,6 +2,9 @@ if,magenta
 for,magenta
 function,magenta
 let,magenta
+var,magenta
+case,red
+break,red
 {,red
 },red
 return,magenta

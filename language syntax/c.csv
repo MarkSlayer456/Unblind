@@ -9,12 +9,16 @@ double,magenta
 float,magenta
 char,magenta
 struct,magenta
+while,magenta
+for,magenta
 continue,red
 break,red
+case,red
 #define,green
 #include,green
 ",magenta
 ',magenta
 if,magenta
+else,magenta
 switch,magenta
 return,magenta

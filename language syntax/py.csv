@@ -4,9 +4,14 @@ class,red
 return,magenta
 for,magenta
 if,magenta
+elif,magenta
+while,magenta
 pass,red
 continue,red
 break,red
 ",magenta
 ',magenta
 using,magenta
+import,green
+as,green
+with,green
