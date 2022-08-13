@@ -436,6 +436,12 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
             unblind_move_to_message(info);
 			break;
+		case CTRL_K:
+			jump_backward_word(info);
+			break;
+		case CTRL_L:
+			jump_forward_word(info);
+			break;
         case CTRL_B:
             memset(info->jstr, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
             memset(info->message, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));

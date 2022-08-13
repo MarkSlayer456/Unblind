@@ -40,13 +40,38 @@ void jump_to_end(unblind_info_t *info) {
 void jump_to_line(unblind_info_t *info, int line) {
     if(info->contents[line][0] == '\0') {
         strcpy(info->message, LINE_DOES_NOT_EXIST);
-        return;
     } else {
         info->cy = line;
         info->cx = 0;
-        unblind_scroll_hor_calc(info);
-        unblind_scroll_vert_calc(info);
     }
+	unblind_scroll_hor_calc(info);
+	unblind_scroll_vert_calc(info);
+}
+
+void jump_forward_word(unblind_info_t *info) {
+	int prev_space = 0;
+	int curr_char = 0;
+	for(;;) {
+		if(current_character(info) == ' ' || current_character(info) == '\n' || current_character(info) == '\t') prev_space = 1;
+		if(current_character(info) != ' ' && current_character(info) != '\n' && current_character(info) != '\t' && prev_space) curr_char = 1;
+		if(prev_space && curr_char) break;
+		move_cursor_right(info);
+	}
+}
+
+void jump_backward_word(unblind_info_t *info) {
+	int curr_space = 0;
+	int prev_char = 0;
+	for(;;) {
+		move_cursor_left(info);
+		if(current_character(info) != ' ' && current_character(info) != '\n' && current_character(info) != '\t') prev_char = 1;
+		if((current_character(info) == ' ' || current_character(info) == '\n' || current_character(info) == '\t') && prev_char) curr_space = 1;
+		if(curr_space && prev_char) {
+			move_cursor_right(info);
+			break;
+		}
+		if(info->cx == 0 && info->cy == 0) break;
+	}
 }
 
 void move_cursor_up(unblind_info_t *info) {

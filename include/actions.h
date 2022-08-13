@@ -8,6 +8,8 @@ void jump_to_start(unblind_info_t *info);
 void jump_to_end(unblind_info_t *info);
 
 void jump_to_line(unblind_info_t *info, int line);
+void jump_forward_word(unblind_info_t *info);
+void jump_backward_word(unblind_info_t *info);
 
 void move_cursor_up(unblind_info_t *info);
 void move_cursor_down(unblind_info_t *info);

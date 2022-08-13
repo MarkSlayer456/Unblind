@@ -26,6 +26,8 @@
 #define CTRL_UP_ARROW			      CTRL_ARROW_KEY_MOD + 65
 #define CTRL_RIGHT_ARROW		      CTRL_ARROW_KEY_MOD + 67
 #define CTRL_LEFT_ARROW			      CTRL_ARROW_KEY_MOD + 68
+#define CTRL_K						  11
+#define CTRL_L						  12
 
 #define BACKSPACE_KEY_0	              127
 #define BACKSPACE_KEY_1               8
