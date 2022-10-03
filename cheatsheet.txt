@@ -15,4 +15,6 @@ text editing commands:
 	- ctrl-LEFT_ARROW  | jump to start of line
 	- PAGE-UP          | jump to start of file
 	- PAGE-DOWN        | jump to end of file
-
+	- ctrl-e		 | prompts for a file name to vertically split the screen with
+	- ctrl-b		 | prompts for a line number to jump to
+	- ctrl-w		 | swaps active window to the next avaiable window 
