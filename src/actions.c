@@ -681,7 +681,7 @@ void undo_last_backspace(unblind_info_t *info, char *c, int x, int y) {
 
 void undo_enter(unblind_info_t *info, char *c, int y) {
     info->cy = y;
-    info->cx = strlen(c) * TAB_SIZE+1; // because tab_size is broken apparently
+    info->cx = strlen(c) * (TAB_SIZE+1); // because tab_size is broken apparently
     backspace_action(info, 0);
     for(int i = 0; i < strlen(c); i++) {
         backspace_action(info, 0);
