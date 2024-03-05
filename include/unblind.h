@@ -37,6 +37,7 @@
 #define CTRL_D			              4
 #define CTRL_X			              24
 #define CTRL_Z			              26
+#define CTRL_Y			              25
 #define CTRL_S			              19
 #define CTRL_Q			              17
 #define CTRL_P			              16
@@ -117,7 +118,7 @@ typedef struct unblind_info {
     char *fstr; // find string
     char *jstr; // jump string
     
-    undo_redo_manager_t *ur_manager;
+    undo_redo_manager_t *ur_manager; // name change is needed here to u_manager, but this requires quite a lot of refactoring so I'll do it later!
 } unblind_info_t;
 
 typedef struct user_settings {

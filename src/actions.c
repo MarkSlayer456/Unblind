@@ -478,7 +478,7 @@ void type_char(char c, unblind_info_t *info, int add_to_ur_manager) {
         strcpy(info->message, "");
 		if(add_to_ur_manager == 1) {
 			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
-			node->c = " "; // won't be used
+			node->c = strdup(&c); // need so redos can happen
 			node->action = TYPE;
 			linked_list_d_add(info->ur_manager->stack_u, (void *) node, x, y);
 		}
@@ -651,6 +651,13 @@ void undo_type_char(unblind_info_t *info, int x, int y) {
     info->cy = y;
 	unblind_scroll_hor_calc(info);
     unblind_scroll_vert_calc(info);
+		int rx = info->cx;
+		int ry = info->cy;
+        ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+	ur_node_t *undo_node = info->ur_manager->stack_u->tail->value;
+        node->action = TYPE;
+	node->c = strdup(undo_node->c);
+	linked_list_d_add(info->ur_manager->stack_r, (void *) node, rx, ry);
 	linked_list_d_pop(info->ur_manager->stack_u);
 }
 
@@ -666,6 +673,11 @@ void undo_backspace(unblind_info_t *info, char *c, int x, int y) {
 		type_char(*c, info, 0);
 	}
 	linked_list_d_pop(info->ur_manager->stack_u);
+		int rx = info->cx;
+		int ry = info->cy;
+        ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+        node->action = BACKSPACE;
+	linked_list_d_add(info->ur_manager->stack_r, (void *) node, rx, ry);
 }
 
 void undo_last_backspace(unblind_info_t *info, char *c, int x, int y) {
@@ -677,6 +689,11 @@ void undo_last_backspace(unblind_info_t *info, char *c, int x, int y) {
 	info->cy = y;
     unblind_scroll_hor_calc(info);
 	linked_list_d_pop(info->ur_manager->stack_u);
+		int rx = info->cx;
+		int ry = info->cy;
+        ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+        node->action = BACKSPACE_LAST_CHAR;
+	linked_list_d_add(info->ur_manager->stack_r, (void *) node, rx, ry);
 }
 
 void undo_enter(unblind_info_t *info, char *c, int y) {
@@ -689,6 +706,11 @@ void undo_enter(unblind_info_t *info, char *c, int y) {
     unblind_scroll_hor_calc(info);
     unblind_scroll_vert_calc(info);
 	linked_list_d_pop(info->ur_manager->stack_u);
+		int rx = info->cx;
+		int ry = info->cy;
+        ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+        node->action = ENTER;
+	linked_list_d_add(info->ur_manager->stack_r, (void *) node, rx, ry);
 }
 
 void undo_tab(unblind_info_t *info, int x, int y) {
@@ -702,6 +724,11 @@ void undo_tab(unblind_info_t *info, int x, int y) {
 		i++;
 	}
 	linked_list_d_pop(info->ur_manager->stack_u);
+		int rx = info->cx;
+		int ry = info->cy;
+        ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+        node->action = TAB;
+	linked_list_d_add(info->ur_manager->stack_r, (void *) node, rx, ry);
 }
 
 void undo_delete_line(unblind_info_t *info, char *c, int x, int y) {
@@ -722,6 +749,12 @@ void undo_delete_line(unblind_info_t *info, char *c, int x, int y) {
     unblind_scroll_hor_calc(info);
     unblind_scroll_vert_calc(info);
     linked_list_d_pop(info->ur_manager->stack_u);
+		int rx = info->cx;
+		int ry = info->cy;
+        ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+        node->action = DELETE_LINE;
+	linked_list_d_add(info->ur_manager->stack_r, (void *) node, rx, ry);
+
 }
 
 void undo_duplicate_line(unblind_info_t *info, int x, int y) {
@@ -732,6 +765,11 @@ void undo_duplicate_line(unblind_info_t *info, int x, int y) {
     unblind_scroll_hor_calc(info);
     unblind_scroll_vert_calc(info);
     linked_list_d_pop(info->ur_manager->stack_u);
+		int rx = info->cx;
+		int ry = info->cy;
+        ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+        node->action = DUP_LINE;
+	linked_list_d_add(info->ur_manager->stack_r, (void *) node, rx, ry);
 }
 
 void undo_move_line_down(unblind_info_t *info, int x, int y) {
@@ -739,6 +777,11 @@ void undo_move_line_down(unblind_info_t *info, int x, int y) {
     info->cy = y;
     move_line_up(info, 0);
     linked_list_d_pop(info->ur_manager->stack_u);
+		int rx = info->cx;
+		int ry = info->cy;
+        ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+        node->action = MOVE_LINE_DOWN;
+	linked_list_d_add(info->ur_manager->stack_r, (void *) node, rx, ry);
 }
 
 void undo_move_line_up(unblind_info_t *info, int x, int y) {
@@ -746,4 +789,9 @@ void undo_move_line_up(unblind_info_t *info, int x, int y) {
     info->cy = y;
     move_line_down(info, 0);
     linked_list_d_pop(info->ur_manager->stack_u);
+		int rx = info->cx;
+		int ry = info->cy;
+        ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+        node->action = MOVE_LINE_UP;
+	linked_list_d_add(info->ur_manager->stack_r, (void *) node, rx, ry);
 }

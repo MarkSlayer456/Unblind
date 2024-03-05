@@ -491,6 +491,20 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			delete_line(info, 1);
 			modified = 1;
 			break;
+		case CTRL_Y: // ctrl-y
+			if(info->ur_manager->stack_r->tail != NULL) {
+				dll_node_t *node = (dll_node_t *) info->ur_manager->stack_r->tail;
+				ur_node_t *ur_node = (ur_node_t *) node->value;
+				switch(ur_node->action) {
+					case TYPE:
+						info->cx = node->x;
+						info->cy = node->y;
+						type_char(*ur_node->c, info, 1);
+						break;
+				}
+				linked_list_d_pop(info->ur_manager->stack_r);
+			}
+			break;
 		case CTRL_Z: // ctrl-z
 			if(info->ur_manager->stack_u->tail != NULL) {
 				dll_node_t *node = (dll_node_t *) info->ur_manager->stack_u->tail;
