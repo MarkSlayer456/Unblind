@@ -499,7 +499,17 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 					case TYPE:
 						info->cx = node->x;
 						info->cy = node->y;
+						unblind_scroll_hor_calc(info);
+    						unblind_scroll_vert_calc(info);
 						type_char(*ur_node->c, info, 1);
+						break;
+					case TAB:
+						info->cx = node->x;
+						info->cy = node->y;
+						unblind_scroll_hor_calc(info);
+    						unblind_scroll_vert_calc(info);
+						tab_action(info, 1);
+						modified = 1;
 						break;
 				}
 				linked_list_d_pop(info->ur_manager->stack_r);
