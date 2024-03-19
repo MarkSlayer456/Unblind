@@ -502,6 +502,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 						unblind_scroll_hor_calc(info);
     						unblind_scroll_vert_calc(info);
 						type_char(*ur_node->c, info, 1);
+						modified = 1;
 						break;
 					case TAB:
 						info->cx = node->x;
@@ -509,6 +510,36 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 						unblind_scroll_hor_calc(info);
     						unblind_scroll_vert_calc(info);
 						tab_action(info, 1);
+						modified = 1;
+						break;
+					case BACKSPACE:
+					case BACKSPACE_LAST_CHAR:
+						info->cx = node->x;
+						info->cy = node->y;
+						unblind_scroll_hor_calc(info);
+    						unblind_scroll_vert_calc(info);
+						backspace_action(info, 1); 
+						modified = 1;
+						break;
+					case ENTER:
+					case ENTER_MIDDLE_OF_LINE:
+						info->cx = node->x;
+						info->cy = node->y;
+						unblind_scroll_hor_calc(info);
+    						unblind_scroll_vert_calc(info);
+						enter_key_action(info, 1);
+						modified = 1;
+						break;
+					case DELETE_LINE:
+						modified = 1;
+						break;
+					case DUP_LINE:
+						modified = 1;
+						break;
+					case MOVE_LINE_UP:
+						modified = 1;
+						break;
+					case MOVE_LINE_DOWN:
 						modified = 1;
 						break;
 				}

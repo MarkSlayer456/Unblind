@@ -685,8 +685,6 @@ void undo_last_backspace(unblind_info_t *info, char *c, int x, int y) {
 	info->cx = x;
 	info->cy = y;
 	enter_key_action(info, 0);
-	info->cx = x;
-	info->cy = y;
     unblind_scroll_hor_calc(info);
 	linked_list_d_pop(info->ur_manager->stack_u);
 		int rx = info->cx;
