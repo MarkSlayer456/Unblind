@@ -793,3 +793,30 @@ void undo_move_line_up(unblind_info_t *info, int x, int y) {
         node->action = MOVE_LINE_UP;
 	linked_list_d_add(info->ur_manager->stack_r, (void *) node, rx, ry);
 }
+/**
+ * Replace characters with the given characters starting at the pos
+ */
+void replace_with(unblind_info_t *info, int x, int y, char *str) {
+	int len = strlen(str);
+	info->cx = x;
+	info->cy = y;
+	unblind_scroll_hor_calc(info);
+	unblind_scroll_vert_calc(info);
+	while(info->size[y] <= strlen(current_line(info)) + len) {
+		info->size[y] *= 2;
+	} 
+	info->contents[y] = realloc(info->contents[y], info->size[y]);
+	for(int i = 0; i < len; i++) {
+		if(info->contents[y][x+i] == '\n') {
+			if(info->contents[y][x+i+1] == '\0') {
+				info->contents[y][x+i+2] = '\0';
+			}
+			info->contents[y][x+i+1] = '\n';
+		}
+		if(info->contents[y][x+i] == '\0') {
+			info->contents[y][x+i+1] = '\0';
+		}
+		info->contents[info->cy][x+i] = str[i];
+	}
+}
+

@@ -388,25 +388,25 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 	int modified = 0; // was the file modified during operation?
 	switch(x) {
 		case PAGE_UP:
-            jump_to_start(info);
+			jump_to_start(info);
 			break;
 		case PAGE_DOWN:
-            jump_to_end(info);
+			jump_to_end(info);
 			break;
-		case CTRL_DOWN_ARROW:
-            move_line_down(info, 1);
+		case CTRL_DOWN_ARROW: // move line down
+			move_line_down(info, 1);
 			modified = 1;
 			break;
-		case CTRL_UP_ARROW:
-            move_line_up(info, 1);
+		case CTRL_UP_ARROW: // move line up
+			move_line_up(info, 1);
 			modified = 1;
 			break;
-		case CTRL_RIGHT_ARROW:
-            if(current_line(info)[strlen(current_line(info))-1] == '\n') info->cx = strlen(current_line(info))-1;
-            else info->cx = strlen(current_line(info));
+		case CTRL_RIGHT_ARROW: // move to end of line
+			if(current_line(info)[strlen(current_line(info))-1] == '\n') info->cx = strlen(current_line(info))-1;
+			else info->cx = strlen(current_line(info));
 			unblind_scroll_hor_calc(info);
 			break;
-		case CTRL_LEFT_ARROW:
+		case CTRL_LEFT_ARROW: // move to start of line
 			info->cx = 0;
 			unblind_scroll_hor_calc(info);
 			break;
@@ -422,36 +422,38 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 		case RIGHT_ARROW: // right arrow
 			move_cursor_right(info);
 			break;
-        case CTRL_E:
-            //TODO prompt for a file name and a direction (vert or hor)
-            memset(info->cmd, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
-            memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
-            info->m = CMD;
-            unblind_move_to_message(info);
-            break;
-		case CTRL_F:
+		case CTRL_E: // command prompt
+		    //TODO prompt for a file name and a direction (vert or hor)
+		    memset(info->cmd, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
+		    memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
+		    info->m = CMD;
+		    unblind_move_to_message(info);
+		    break;
+		case CTRL_F: // find a string
 			info->m = FIND;
 			info->find = NULL;
 			memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
 			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
             unblind_move_to_message(info);
 			break;
-		case CTRL_K:
+		case CTRL_R: // replace strings
+			break;
+		case CTRL_K: // jump backword a word
 			jump_backward_word(info);
 			break;
-		case CTRL_L:
+		case CTRL_L: // jump forward a word
 			jump_forward_word(info);
 			break;
-        case CTRL_B:
-            memset(info->jstr, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
-            memset(info->message, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
-            info->m = JUMP;
-            unblind_move_to_message(info);
-            break;
-		case CTRL_P:
+		case CTRL_B: // jump to a line number
+		    memset(info->jstr, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
+		    memset(info->message, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
+		    info->m = JUMP;
+		    unblind_move_to_message(info);
+		    break;
+		case CTRL_P: // move forward when using find string
 			find_str(info);
 			break;
-		case CTRL_Q: // ctrl-q
+		case CTRL_Q: // quit
 			if(info->needs_saved ==  1) {
 				info->m = QUIT_SAVE;
 				unblind_move_to_message(info);
@@ -462,7 +464,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 				else close_active_win(th);
 			}
 			break;
-		case CTRL_S: // ctrl-s
+		case CTRL_S: // save
 			save_file(file_name, info);
 			info->needs_saved = 0;
 			break;
@@ -484,9 +486,9 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			duplicate_line(info, 1);
 			modified = 1;
 			break;
-        case CTRL_W:
-            change_active_window(th);
-            break;
+		case CTRL_W:
+		    change_active_window(th);
+		    break;
 		case CTRL_X: // ctrl-x
 			delete_line(info, 1);
 			modified = 1;

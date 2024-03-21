@@ -51,5 +51,6 @@ void undo_duplicate_line(unblind_info_t *info, int x, int y);
 void undo_move_line_down(unblind_info_t *info, int x, int y);
 void undo_move_line_up(unblind_info_t *info, int x, int y);
 
+void replace_with(unblind_info_t *info, int x, int y, char *str);
 
 #endif

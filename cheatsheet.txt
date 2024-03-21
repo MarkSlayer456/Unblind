@@ -18,3 +18,5 @@ text editing commands:
 	- ctrl-e		 | prompts for a file name to vertically split the screen with
 	- ctrl-b		 | prompts for a line number to jump to
 	- ctrl-w		 | swaps active window to the next avaiable window 
+	- ctrl-l		 | jump forward a word
+	- ctrl-k		 | jump backward a word

@@ -45,6 +45,7 @@
 #define CTRL_B                        2
 #define CTRL_W                        23
 #define CTRL_E                        5
+#define CTRL_R				18
 #define ESC_KEY						  27
 
 #define FIND_STR_MAX_LENGTH           300
