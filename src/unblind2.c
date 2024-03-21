@@ -531,15 +531,35 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 						modified = 1;
 						break;
 					case DELETE_LINE:
+						info->cx = node->x;
+						info->cy = node->y;
+						unblind_scroll_hor_calc(info);
+    						unblind_scroll_vert_calc(info);
+						delete_line(info, 1);
 						modified = 1;
 						break;
 					case DUP_LINE:
+						info->cx = node->x;
+						info->cy = node->y;
+						unblind_scroll_hor_calc(info);
+    						unblind_scroll_vert_calc(info);
+						duplicate_line(info, 1);
 						modified = 1;
 						break;
 					case MOVE_LINE_UP:
+						info->cx = node->x;
+						info->cy = node->y;
+						unblind_scroll_hor_calc(info);
+    						unblind_scroll_vert_calc(info);
+						move_line_up(info, 1);
 						modified = 1;
 						break;
 					case MOVE_LINE_DOWN:
+						info->cx = node->x;
+						info->cy = node->y;
+						unblind_scroll_hor_calc(info);
+    						unblind_scroll_vert_calc(info);
+						move_line_down(info, 1);
 						modified = 1;
 						break;
 				}
