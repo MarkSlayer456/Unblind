@@ -70,12 +70,13 @@ typedef enum {
 } language_t;
 
 typedef enum {
-    FIND = 1,
-    EDIT = 2,
-    INSERT = 3,
-    JUMP = 4,
-    CMD = 5,
-	QUIT_SAVE = 6
+	FIND = 1,
+	EDIT = 2,
+	INSERT = 3,
+	JUMP = 4,
+	CMD = 5,
+	QUIT_SAVE = 6,
+	REPLACE = 7
 } unblind_mode_t;
 
 typedef struct parse_data {
@@ -115,9 +116,12 @@ typedef struct unblind_info {
     char *cmd;
     
     d_linked_list_t *find;
+    d_linked_list_t *replace;
     unblind_mode_t m;
     char *fstr; // find string
     char *jstr; // jump string
+    char *rsstr; // replace search string
+    char *rstr; // replace string
     
     undo_redo_manager_t *ur_manager; // name change is needed here to u_manager, but this requires quite a lot of refactoring so I'll do it later!
 } unblind_info_t;

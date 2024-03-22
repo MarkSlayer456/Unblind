@@ -235,17 +235,17 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 		if(c == ENTER_KEY) {
 			find_str(info);
 			info->m = EDIT;
-            // memset(info->message, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
-            update_cursor_pos(info);
+			// memset(info->message, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
+			update_cursor_pos(info);
 		} else if(c == BACKSPACE_KEY_0 || c == BACKSPACE_KEY_1 || c == BACKSPACE_KEY_2) {
-            if(strlen(info->fstr) == 0) return;
+			if(strlen(info->fstr) == 0) return;
 			info->fstr[strlen(info->fstr)-1] = '\0';
-            info->wcx--;
+			info->wcx--;
 			strcpy(info->message, info->fstr);
 		} else if((c >= 32 && c <= 126)) {
 			if(strlen(info->fstr)+1 == sizeof(char) * FIND_STR_MAX_LENGTH) return; // this is very long shouldn't need to be any bigger
 			info->fstr[strlen(info->fstr)] = c;
-            info->wcx++;
+			info->wcx++;
 			strcpy(info->message, info->fstr);
 		} else if(c == ESC_KEY) {
 			info->m = EDIT;
@@ -255,6 +255,9 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
 			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
 		}
+		return;
+	} else if(info->m == REPLACE) {
+		
 		return;
 	} else if(info->m == JUMP) {
         //char *line = malloc(1000 * sizeof(char)); // if a line number is bigger than this I don't know what to tell ya
@@ -437,6 +440,10 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
             unblind_move_to_message(info);
 			break;
 		case CTRL_R: // replace strings
+			info->m = REPLACE;
+			info->replace = NULL;
+			memset(info->rstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
+			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
 			break;
 		case CTRL_K: // jump backword a word
 			jump_backward_word(info);

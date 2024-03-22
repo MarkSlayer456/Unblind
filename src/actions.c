@@ -184,32 +184,32 @@ void find_str(unblind_info_t *info) {
 		int Fsize = strlen(info->fstr);
 		for(int j = 0; j < info->max_lines; j++) {
 			if(Fsize == 1) {
-                for(int i = 0; i <= info->size[j]; i++) {
-                    if(info->contents[j][i] == '\0') break;
-                    if(info->fstr[0] == info->contents[j][i]) linked_list_d_add(info->find, (void *) info->fstr, i, j);
-                }
-            } else {
-                int Jsize = strlen(info->contents[j]);
-                for(int i = 0; i <= Jsize && Jsize >= Fsize; i++) {
-                    char *newStr = malloc(sizeof(char) * Fsize+1);
-                    memset(newStr, 0, Fsize+1);
-                    strncpy(newStr, info->contents[j]+i, Fsize);
-                    int look = hash(newStr);
-                    if(look == find) {
-                        if(strcmp(newStr, info->fstr) == 0) {
-                            linked_list_d_add(info->find, (void *) info->fstr, i, j);
-                            
-                        }
-                    }
-                    free(newStr);
-                }
-            }
+				for(int i = 0; i <= info->size[j]; i++) {
+					if(info->contents[j][i] == '\0') break;
+					if(info->fstr[0] == info->contents[j][i]) linked_list_d_add(info->find, (void *) info->fstr, i, j);
+				}
+			} else {
+				int Jsize = strlen(info->contents[j]);
+				for(int i = 0; i <= Jsize && Jsize >= Fsize; i++) {
+					char *newStr = malloc(sizeof(char) * Fsize+1);
+					memset(newStr, 0, Fsize+1);
+					strncpy(newStr, info->contents[j]+i, Fsize);
+					int look = hash(newStr);
+					if(look == find) {
+						if(strcmp(newStr, info->fstr) == 0) {
+							linked_list_d_add(info->find, (void *) info->fstr, i, j);
+
+						}
+					}
+					free(newStr);
+				}
+			}
 		}
 		tmp = linked_list_d_get(info->find, info->find->curr);
 		if(tmp == NULL) {
 			strcpy(info->message, NO_RESULTS);
-            unblind_scroll_hor_calc(info);
-            unblind_scroll_vert_calc(info);
+			unblind_scroll_hor_calc(info);
+			unblind_scroll_vert_calc(info);
 			return;
 		}
 	} else {
