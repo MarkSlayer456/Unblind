@@ -75,7 +75,7 @@ void setup_unblind_info(unblind_info_t *info)
 		info->contents[i] = calloc(info->size[i], sizeof(char));
     }
 	
-	info->replace = calloc(1, sizeof(d_linked_list);
+	info->replace = calloc(1, sizeof(d_linked_list_t));
 	info->replace->head = NULL;
 	info->rsstr = calloc(REPLACE_STRING_MAX_LENGTH, sizeof(char));
 	info->rstr = calloc(REPLACE_STRING_MAX_LENGTH, sizeof(char));

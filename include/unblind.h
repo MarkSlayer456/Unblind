@@ -49,6 +49,7 @@
 #define ESC_KEY						  27
 
 #define FIND_STR_MAX_LENGTH           300
+#define REPLACE_STRING_MAX_LENGTH		300
 #define MAX_MESSAGE_LENGTH            300
 #define MAX_JUMP_STR_LENGTH           300
 #define DEFAULT_MAX_CHARS_PER_LINE	  256
@@ -76,7 +77,8 @@ typedef enum {
 	JUMP = 4,
 	CMD = 5,
 	QUIT_SAVE = 6,
-	REPLACE = 7
+	REPLACE = 7,
+	SEARCH_REPLACE = 8
 } unblind_mode_t;
 
 typedef struct parse_data {

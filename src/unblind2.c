@@ -256,8 +256,57 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
 		}
 		return;
-	} else if(info->m == REPLACE) {
-		
+	} else if(info->m == REPLACE) { // typing replace string
+		if(c == ENTER_KEY) {
+			// search and replace all strings
+			info->m = EDIT;
+			unblind_scroll_vert_calc(info);
+			unblind_scroll_hor_calc(info);
+			update_cursor_pos(info);
+			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
+		} else if(c == BACKSPACE_KEY_0 || c == BACKSPACE_KEY_1 || c == BACKSPACE_KEY_2) {
+			if(strlen(info->rstr) == 0) return;
+			info->rstr[strlen(info->rstr)-1] = '\0';
+			info->wcx--;
+			strcpy(info->message, info->fstr);
+		} else if((c >= 32 && c <= 126)) {
+			if(strlen(info->rstr)+1 == sizeof(char) + FIND_STR_MAX_LENGTH) return;
+			info->rstr[strlen(info->rstr)] = c;
+			info->wcx++;
+			strcpy(info->message, info->rstr);
+		} else if(c == ESC_KEY) {
+			info->m = EDIT;
+			unblind_scroll_vert_calc(info);
+			unblind_scroll_hor_calc(info);
+			update_cursor_pos(info);
+			memset(info->rstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
+			return;
+		}
+		return;
+	} else if(info->m == SEARCH_REPLACE) {
+		if(c == ENTER_KEY) {
+			memset(info->rstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
+			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
+      unblind_move_to_message(info);
+			info->m = REPLACE;
+		} else if(c == BACKSPACE_KEY_0 || c == BACKSPACE_KEY_1 || c == BACKSPACE_KEY_2) {
+			if(strlen(info->rsstr) == 0) return;
+			info->rsstr[strlen(info->rsstr)-1] = '\0';
+			info->wcx--;
+			strcpy(info->message, info->fstr);
+		} else if((c >= 32 && c <= 126)) {
+			if(strlen(info->rsstr)+1 == sizeof(char) * FIND_STR_MAX_LENGTH) return; // this is very long shouldn't need to be any bigger
+			info->rsstr[strlen(info->rsstr)] = c;
+			info->wcx++;
+			strcpy(info->message, info->rsstr);
+		} else if(c == ESC_KEY) {
+			info->m = EDIT;
+			unblind_scroll_vert_calc(info);
+			unblind_scroll_hor_calc(info);
+			update_cursor_pos(info);
+			memset(info->rstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
+			return;
+		}
 		return;
 	} else if(info->m == JUMP) {
         //char *line = malloc(1000 * sizeof(char)); // if a line number is bigger than this I don't know what to tell ya
@@ -324,7 +373,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			update_cursor_pos(info);
 			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
 		}
-        return;
+		return;
 	} else if(info->m == QUIT_SAVE) {
 		// move cursor to end of current string
 		info->wcx = strlen(info->message);
@@ -437,13 +486,14 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			info->find = NULL;
 			memset(info->fstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
 			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
-            unblind_move_to_message(info);
+      unblind_move_to_message(info);
 			break;
 		case CTRL_R: // replace strings
-			info->m = REPLACE;
+			info->m = SEARCH_REPLACE;
 			info->replace = NULL;
 			memset(info->rstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
 			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
+      unblind_move_to_message(info);
 			break;
 		case CTRL_K: // jump backword a word
 			jump_backward_word(info);
