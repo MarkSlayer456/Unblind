@@ -237,6 +237,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			info->m = EDIT;
 			// memset(info->message, '\0', MAX_JUMP_STR_LENGTH * sizeof(char));
 			update_cursor_pos(info);
+			info->scan_mode = FINDING;
 		} else if(c == BACKSPACE_KEY_0 || c == BACKSPACE_KEY_1 || c == BACKSPACE_KEY_2) {
 			if(strlen(info->fstr) == 0) return;
 			info->fstr[strlen(info->fstr)-1] = '\0';
@@ -259,6 +260,9 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 	} else if(info->m == REPLACE) { // typing replace string
 		if(c == ENTER_KEY) {
 			// search and replace all strings
+			info->scan_mode = REPLACING;
+			info->can_replace = 1;
+			replace_str(info);
 			info->m = EDIT;
 			unblind_scroll_vert_calc(info);
 			unblind_scroll_hor_calc(info);
@@ -268,7 +272,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			if(strlen(info->rstr) == 0) return;
 			info->rstr[strlen(info->rstr)-1] = '\0';
 			info->wcx--;
-			strcpy(info->message, info->fstr);
+			strcpy(info->message, info->rstr);
 		} else if((c >= 32 && c <= 126)) {
 			if(strlen(info->rstr)+1 == sizeof(char) + FIND_STR_MAX_LENGTH) return;
 			info->rstr[strlen(info->rstr)] = c;
@@ -438,6 +442,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 	}
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	int modified = 0; // was the file modified during operation?
+	int can_replace = 0;
 	switch(x) {
 		case PAGE_UP:
 			jump_to_start(info);
@@ -490,8 +495,9 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			break;
 		case CTRL_R: // replace strings
 			info->m = SEARCH_REPLACE;
-			info->replace = NULL;
+			reset_replace(info);
 			memset(info->rstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
+			memset(info->rsstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
 			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
       unblind_move_to_message(info);
 			break;
@@ -508,7 +514,19 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 		    unblind_move_to_message(info);
 		    break;
 		case CTRL_P: // move forward when using find string
-			find_str(info);
+			if(info->scan_mode == FINDING) {
+				find_str(info);
+			} else if(info->scan_mode == REPLACING) {
+				can_replace = replace_str(info);
+				if(can_replace > 0) can_replace = 1; 
+				else can_replace = 0;
+			}
+			break;
+		case CTRL_O:
+			if(info->scan_mode == REPLACING && info->can_replace) {
+				replace_with(info, info->cx, info->cy, strlen(info->rsstr),info->rstr);
+				modified = 1;
+			}
 			break;
 		case CTRL_Q: // quit
 			if(info->needs_saved ==  1) {
@@ -671,12 +689,29 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 	if(modified == 1) {
 		info->needs_saved = 1;
 	}
+	info->can_replace = can_replace;
 }
 
 void move_to_left(char *arr, int left, int size) {
     for(int j = left; j < size; j++) {
         arr[j] = arr[j + 1];
     }
+}
+
+void remove_from_2d_array(void **arr, int index, int size) {
+	for(int i = index; i < size-1; i++) {
+		if(arr[i] != NULL) {
+			memcpy(arr[i], arr[i+1], 2 * sizeof(int));
+		}
+	}
+}
+
+void reset_replace(unblind_info_t *info) {
+	for(int i = 0; i < info->replace_search_size; i++) {
+		info->replace[i][0] = -1;
+		info->replace[i][1] = -1;
+	}
+	info->replace_loc = 0;
 }
 
 void shift_up(unblind_info_t *info) {

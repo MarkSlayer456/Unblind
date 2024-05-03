@@ -48,6 +48,9 @@ void setup_unblind_info(unblind_info_t *info)
 	info->needs_saved = 0;
     info->prompt_save = 0;
 	info->max_lines = DEFAULT_MAX_LINES;
+	info->can_replace = 0;
+ 	info->replace_search_size = 10;
+	info->replace_loc = 0;
 // 	info->max_chars_per_line = DEFAULT_MAX_CHARS_PER_LINE;
     
 	info->p_data = malloc(sizeof(parse_data_t));
@@ -75,8 +78,15 @@ void setup_unblind_info(unblind_info_t *info)
 		info->contents[i] = calloc(info->size[i], sizeof(char));
     }
 	
-	info->replace = calloc(1, sizeof(d_linked_list_t));
-	info->replace->head = NULL;
+	info->scan_mode = NONE;
+	info->replace = calloc(info->replace_search_size, sizeof(int *));
+	for(int i = 0; i < info->replace_search_size; i++) {
+		info->replace[i] = calloc(2, sizeof(int));
+		info->replace[i][0] = -1; // an impossible position
+		info->replace[i][1] = -1; // an impossible position
+	}
+	//info->replace = calloc(1, sizeof(d_linked_list_t));
+	//info->replace->head = NULL;
 	info->rsstr = calloc(REPLACE_STRING_MAX_LENGTH, sizeof(char));
 	info->rstr = calloc(REPLACE_STRING_MAX_LENGTH, sizeof(char));
 }
@@ -107,9 +117,18 @@ void unblind_info_free_mini(unblind_info_t *info)
     
 	linked_list_d_free(info->find, info->find->head);
 	free(info->find);
+
+
     
     free(info->fstr);
     free(info->jstr);
+
+	for(int i = 0; i < info->replace_search_size; i++) {
+		free(info->replace[i]); 
+	}
+	free(info->replace);
+	free(info->rsstr);
+	free(info->rstr);
     
     for(int j = 0; j < info->max_lines; j++) {
         if(info->contents[j])

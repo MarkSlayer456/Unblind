@@ -41,6 +41,7 @@
 #define CTRL_S			              19
 #define CTRL_Q			              17
 #define CTRL_P			              16
+#define CTRL_O					15
 #define CTRL_F		                  6
 #define CTRL_B                        2
 #define CTRL_W                        23
@@ -54,6 +55,12 @@
 #define MAX_JUMP_STR_LENGTH           300
 #define DEFAULT_MAX_CHARS_PER_LINE	  256
 #define DEFAULT_MAX_LINES			  4096
+
+typedef enum {
+	NONE = 1,
+	FINDING = 2,
+	REPLACING = 3
+} scan_mode_t;
 
 typedef enum {
 	RED = 1,
@@ -118,8 +125,13 @@ typedef struct unblind_info {
     char *cmd;
     
     d_linked_list_t *find;
-    d_linked_list_t *replace;
+    //d_linked_list_t *replace;
+    int **replace;
+    int replace_loc;
+    int replace_search_size; // this is how much memory we are using
     unblind_mode_t m;
+    scan_mode_t scan_mode;
+    int can_replace;
     char *fstr; // find string
     char *jstr; // jump string
     char *rsstr; // replace search string
@@ -159,6 +171,8 @@ int disable_color(unblind_info_t *info, color_t color);
 int draw_find_syntax_highlight(unblind_info_t *info, color_t *color, int *toggleColor, int i, int j);
 int array_insert(char *a, int x, char c, int size);
 void move_to_left(char *arr, int left, int size);
+void remove_from_2d_array(void **arr, int index, int size);
+void reset_replace(unblind_info_t *info);
 void shift_up(unblind_info_t *info);
 void shift_down(unblind_info_t *info);
 

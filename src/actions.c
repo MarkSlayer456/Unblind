@@ -227,6 +227,70 @@ void find_str(unblind_info_t *info) {
     }
 }
 
+int replace_str(unblind_info_t *info) {
+				// make this an array instead? that way you can remove items from it based off location
+				// and that will solve all the problems
+	if(info->replace[0][0] == -1) { // this is not returning NULL when it's setup
+		int replace = hash(info->rsstr);
+		int Rsize = strlen(info->rsstr);
+		int cur = 0;
+		for(int j = 0; j < info->max_lines; j++) {
+				if(cur >= info->replace_search_size) {
+								int old = info->replace_search_size;
+								info->replace_search_size*=2;
+								info->replace = realloc(info->replace, info->replace_search_size);
+								for(int i = old; i < info->replace_search_size-1; i++) {
+												memset(info->replace[i], -1, 2);
+								}
+				}
+			if(Rsize == 1) {
+				for(int i = 0; i <= info->size[j]; i++) {
+					if(info->contents[j][i] == '\0') break;
+					//if(info->rsstr[0] == info->contents[j][i]) linked_list_d_add(info->replace, (void *) info->rsstr, i, j);
+					if(info->rsstr[0] == info->contents[j][i]) {
+									info->replace[cur][0] = i;
+									info->replace[cur++][1] = j;
+					}
+				}
+			} else {
+				int Jsize = strlen(info->contents[j]);
+				for(int i = 0; i <= Jsize && Jsize >= Rsize; i++) {
+					char *newStr = malloc(sizeof(char) * Rsize+1);
+					memset(newStr, 0, Rsize+1);
+					strncpy(newStr, info->contents[j]+i, Rsize);
+					int look = hash(newStr);
+					if(look == replace) {
+						if(strcmp(newStr, info->rsstr) == 0) {
+								info->replace[cur][0] = i;
+								info->replace[cur++][1] = j;
+							//linked_list_d_add(info->replace, (void *) info->rsstr, i, j);
+
+						}
+					}
+					free(newStr);
+				}
+			}
+		}
+		if(info->replace[0][0] == -1) {
+			strcpy(info->message, NO_RESULTS);
+			unblind_scroll_hor_calc(info);
+			unblind_scroll_vert_calc(info);
+			return 0;
+		}
+	} else {
+					info->replace_loc++;
+	}
+	if(info->replace[info->replace_loc][0] == -1) {
+				info->replace_loc = 0;
+	}
+
+				info->cx = info->replace[info->replace_loc][0];
+				info->cy = info->replace[info->replace_loc][1];
+        unblind_scroll_hor_calc(info);
+        unblind_scroll_vert_calc(info);
+				return 1;
+}
+
 void backspace_action(unblind_info_t *info, int add_to_ur_manager) {
 	if(info->cx <= 0 && info->cy <= 0) return;
 	char del;
@@ -255,9 +319,10 @@ void backspace_action(unblind_info_t *info, int add_to_ur_manager) {
         info->cx = len-1;
 		if(add_to_ur_manager) {
 			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
-			char *del1 = &del;
-			node->c = (char *) malloc(sizeof(char)); // won't be used
-			memset(node->c, '\0', sizeof(char));
+			char *del1 = calloc(2, sizeof(char));
+			del1[0] = del;
+			del1[1] = '\0';
+			node->c = calloc(2, sizeof(char)); // won't be used
 			node->c = strdup(del1);
 			node->action = BACKSPACE_LAST_CHAR;
 			linked_list_d_add(info->ur_manager->stack_u, (void *) node, info->cx, info->cy);
@@ -288,9 +353,10 @@ void backspace_action(unblind_info_t *info, int add_to_ur_manager) {
 		}
 		if(add_to_ur_manager) {
 			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
-			char *del1 = &del;
-			node->c = (char *) malloc(sizeof(char)); // won't be used
-			memset(node->c, '\0', sizeof(char));
+			char *del1 = calloc(2, sizeof(char));
+			del1[0] = del;
+			del1[1] = '\0';
+			node->c = calloc(2, sizeof(char)); // won't be used
 			node->c = strdup(del1);
 			node->action = BACKSPACE;
 			linked_list_d_add(info->ur_manager->stack_u, (void *) node, info->cx, info->cy);
@@ -478,9 +544,14 @@ void type_char(char c, unblind_info_t *info, int add_to_ur_manager) {
         strcpy(info->message, "");
 		if(add_to_ur_manager == 1) {
 			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
-			node->c = strdup(&c); // need so redos can happen
+			char *tmp = calloc(2, sizeof(char));
+			tmp[0] = c;
+			tmp[1] = '\0';
+			node->c = calloc(2, sizeof(char));
+			node->c = strdup(tmp); // need so redos can happen
 			node->action = TYPE;
 			linked_list_d_add(info->ur_manager->stack_u, (void *) node, x, y);
+			free(tmp);
 		}
 	} else {
 		return;
@@ -793,30 +864,29 @@ void undo_move_line_up(unblind_info_t *info, int x, int y) {
         node->action = MOVE_LINE_UP;
 	linked_list_d_add(info->ur_manager->stack_r, (void *) node, rx, ry);
 }
+
 /**
  * Replace characters with the given characters starting at the pos
  */
-void replace_with(unblind_info_t *info, int x, int y, char *str) {
-	int len = strlen(str);
-	info->cx = x;
+void replace_with(unblind_info_t *info, int x, int y, int search_length, char *str) {
+				remove_from_2d_array((void **)info->replace, info->replace_loc, info->replace_search_size);
+				info->replace_loc--;
+	int replace_len = strlen(str);
+	info->cx = x + search_length;
 	info->cy = y;
 	unblind_scroll_hor_calc(info);
 	unblind_scroll_vert_calc(info);
-	while(info->size[y] <= strlen(current_line(info)) + len) {
+	for(int i = 0; i < search_length; i++) {
+					backspace_action(info, 0);
+	}
+	while(info->size[y] <= strlen(current_line(info)) + replace_len) {
 		info->size[y] *= 2;
 	} 
 	info->contents[y] = realloc(info->contents[y], info->size[y]);
-	for(int i = 0; i < len; i++) {
-		if(info->contents[y][x+i] == '\n') {
-			if(info->contents[y][x+i+1] == '\0') {
-				info->contents[y][x+i+2] = '\0';
-			}
-			info->contents[y][x+i+1] = '\n';
-		}
-		if(info->contents[y][x+i] == '\0') {
-			info->contents[y][x+i+1] = '\0';
-		}
-		info->contents[info->cy][x+i] = str[i];
+	for(int i = 0; i < replace_len; i++) {
+					type_char(str[i], info, 0);
 	}
+				unblind_scroll_hor_calc(info);
+				unblind_scroll_vert_calc(info);
 }
 

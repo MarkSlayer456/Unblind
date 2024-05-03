@@ -18,6 +18,7 @@ void move_cursor_right(unblind_info_t *info);
 void move_cursor_to_message(unblind_info_t *info);
 
 void find_str(unblind_info_t *info);
+int replace_str(unblind_info_t *info);
 void next_find_str(unblind_info_t *info);
 int hash(char *str);
 
@@ -51,6 +52,6 @@ void undo_duplicate_line(unblind_info_t *info, int x, int y);
 void undo_move_line_down(unblind_info_t *info, int x, int y);
 void undo_move_line_up(unblind_info_t *info, int x, int y);
 
-void replace_with(unblind_info_t *info, int x, int y, char *str);
+void replace_with(unblind_info_t *info, int x, int y, int search_length, char *str);
 
 #endif
