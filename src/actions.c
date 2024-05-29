@@ -254,7 +254,7 @@ int replace_str(unblind_info_t *info) {
 				}
 			} else {
 				int Jsize = strlen(info->contents[j]);
-				for(int i = 0; i <= Jsize && Jsize >= Rsize; i++) {
+				for(int i = 0; i <= Jsize && Jsize >= Rsize; i++) { // this loop seems to do a lot of hashing that shouldn't exist, but maybe I don't understand fully
 					char *newStr = malloc(sizeof(char) * Rsize+1);
 					memset(newStr, 0, Rsize+1);
 					strncpy(newStr, info->contents[j]+i, Rsize);
@@ -868,7 +868,7 @@ void undo_move_line_up(unblind_info_t *info, int x, int y) {
 /**
  * Replace characters with the given characters starting at the pos
  */
-void replace_with(unblind_info_t *info, int x, int y, int search_length, char *str) {
+void replace_with(unblind_info_t *info, int x, int y, int search_length, char *str, int add_to_ur_manager) {
 				remove_from_2d_array((void **)info->replace, info->replace_loc, info->replace_search_size);
 				info->replace_loc--;
 	int replace_len = strlen(str);
@@ -888,5 +888,37 @@ void replace_with(unblind_info_t *info, int x, int y, int search_length, char *s
 	}
 				unblind_scroll_hor_calc(info);
 				unblind_scroll_vert_calc(info);
+		if(add_to_ur_manager) {
+			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+			node->j = strlen(info->rstr);
+			node->i = info->replace_loc;
+			node->c = calloc(strlen(info->rsstr), sizeof(char)); 
+			node->c = strdup(info->rsstr);
+			node->action = REPLACE_ACTION;
+			linked_list_d_add(info->ur_manager->stack_u, (void *) node, info->cx, info->cy);
+		}
 }
 
+void undo_replace_with(unblind_info_t *info, int x, int y, char *str, int index, int replaced_length) {
+				// need some way to prove this is the current replace so if it is we do this and if not we don't..
+				if(strcmp(str, info->rstr) == 0) {
+								add_to_2d_array((void **) info->replace, str, index, info->replace_search_size);
+								info->replace_loc++;
+				}
+				int str_len = strlen(str);
+				info->cx = x;
+				info->cy = y;
+				for(int i = 0; i < replaced_length; i++) {
+								backspace_action(info, 0);
+				}
+				while(info->size[y] <= strlen(current_line(info)) + str_len) {
+								info->size[y] *= 2;
+				} 
+				info->contents[y] = realloc(info->contents[y], info->size[y]);
+				for(int i = 0; i < strlen(str); i++) {
+								type_char(str[i], info, 0);
+				}
+				unblind_scroll_hor_calc(info);
+				unblind_scroll_vert_calc(info);
+				linked_list_d_pop(info->ur_manager->stack_u);
+}

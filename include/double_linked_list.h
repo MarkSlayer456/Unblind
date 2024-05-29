@@ -13,10 +13,12 @@ typedef enum {
 	DUP_LINE = 8,
     MOVE_LINE_UP = 9,
     MOVE_LINE_DOWN = 10,
+		REPLACE_ACTION = 11
 } action_t;
 
 typedef struct ur_node {
     char *c;
+		int i, j;
     action_t action;
 } ur_node_t;
 

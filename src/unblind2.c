@@ -524,7 +524,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			break;
 		case CTRL_O:
 			if(info->scan_mode == REPLACING && info->can_replace) {
-				replace_with(info, info->cx, info->cy, strlen(info->rsstr),info->rstr);
+				replace_with(info, info->cx, info->cy, strlen(info->rsstr),info->rstr, 1);
 				modified = 1;
 			}
 			break;
@@ -639,6 +639,8 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 						move_line_down(info, 1);
 						modified = 1;
 						break;
+					case REPLACE_ACTION:
+						break;
 				}
 				linked_list_d_pop(info->ur_manager->stack_r);
 			}
@@ -675,6 +677,9 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
                     case MOVE_LINE_UP:
                         undo_move_line_up(info, node->x, node->y);
                         break;
+										case REPLACE_ACTION:
+												undo_replace_with(info, node->x, node->y, ur_node->c, ur_node->i, ur_node->j);
+												break;
                     default:
                         break;
                 }
@@ -701,9 +706,18 @@ void move_to_left(char *arr, int left, int size) {
 void remove_from_2d_array(void **arr, int index, int size) {
 	for(int i = index; i < size-1; i++) {
 		if(arr[i] != NULL) {
-			memcpy(arr[i], arr[i+1], 2 * sizeof(int));
+			memcpy(arr[i], arr[i+1], sizeof(char *));
 		}
 	}
+}
+
+// note: this function assumes the array is big enough already
+// to store the data it is given
+void add_to_2d_array(void **arr, char *value, int index, int size) {
+	for(int i = size-1; i > index; i--) { // size if the max size of the array (kinda slow, but it works)
+		memcpy(arr[i+1], arr[i], sizeof(int *));
+	}
+	arr[index] = value;
 }
 
 void reset_replace(unblind_info_t *info) {
