@@ -228,9 +228,8 @@ void find_str(unblind_info_t *info) {
 }
 
 int replace_str(unblind_info_t *info) {
-				// make this an array instead? that way you can remove items from it based off location
-				// and that will solve all the problems
-	if(info->replace[0][0] == -1) { // this is not returning NULL when it's setup
+				if(!info->replace) return 0;
+	if(info->replace[0][0] == -1) {
 		int replace = hash(info->rsstr);
 		int Rsize = strlen(info->rsstr);
 		int cur = 0;
@@ -240,13 +239,12 @@ int replace_str(unblind_info_t *info) {
 								info->replace_search_size*=2;
 								info->replace = realloc(info->replace, info->replace_search_size);
 								for(int i = old; i < info->replace_search_size-1; i++) {
-												memset(info->replace[i], -1, 2);
+												memset(info->replace[i], -1, 2*sizeof(int));
 								}
 				}
 			if(Rsize == 1) {
 				for(int i = 0; i <= info->size[j]; i++) {
 					if(info->contents[j][i] == '\0') break;
-					//if(info->rsstr[0] == info->contents[j][i]) linked_list_d_add(info->replace, (void *) info->rsstr, i, j);
 					if(info->rsstr[0] == info->contents[j][i]) {
 									info->replace[cur][0] = i;
 									info->replace[cur++][1] = j;
@@ -263,7 +261,6 @@ int replace_str(unblind_info_t *info) {
 						if(strcmp(newStr, info->rsstr) == 0) {
 								info->replace[cur][0] = i;
 								info->replace[cur++][1] = j;
-							//linked_list_d_add(info->replace, (void *) info->rsstr, i, j);
 
 						}
 					}
@@ -278,17 +275,29 @@ int replace_str(unblind_info_t *info) {
 			return 0;
 		}
 	} else {
-					info->replace_loc++;
+				info->replace_loc++;
+				if(info->replace_search_size <= info->replace_loc) {
+								info->replace_loc = 0;
+				}
 	}
-	if(info->replace[info->replace_loc][0] == -1) {
+	if(info->replace[0][0] == -1) {
+					strcpy(info->message, NO_RESULTS);
+					unblind_scroll_hor_calc(info);
+					unblind_scroll_vert_calc(info);
+					return 0;
+	}
+	if(info->replace[info->replace_loc] == NULL) {
+				info->replace_loc = 0;
+	} else if(info->replace[info->replace_loc][0] == -1) {
 				info->replace_loc = 0;
 	}
-
-				info->cx = info->replace[info->replace_loc][0];
-				info->cy = info->replace[info->replace_loc][1];
-        unblind_scroll_hor_calc(info);
-        unblind_scroll_vert_calc(info);
-				return 1;
+	if(info->replace_loc > -1) {
+					info->cx = info->replace[info->replace_loc][0];
+					info->cy = info->replace[info->replace_loc][1];
+					unblind_scroll_hor_calc(info);
+					unblind_scroll_vert_calc(info);
+	}
+	return 1;
 }
 
 void backspace_action(unblind_info_t *info, int add_to_ur_manager) {
@@ -890,8 +899,9 @@ void replace_with(unblind_info_t *info, int x, int y, int search_length, char *s
 				unblind_scroll_vert_calc(info);
 		if(add_to_ur_manager) {
 			ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
-			node->j = strlen(info->rstr);
-			node->i = info->replace_loc;
+			node->c2 = calloc(strlen(info->rstr), sizeof(char));
+				node->c2 = strdup(info->rstr);
+			node->i = info->replace_loc+1;
 			node->c = calloc(strlen(info->rsstr), sizeof(char)); 
 			node->c = strdup(info->rsstr);
 			node->action = REPLACE_ACTION;
@@ -899,18 +909,23 @@ void replace_with(unblind_info_t *info, int x, int y, int search_length, char *s
 		}
 }
 
-void undo_replace_with(unblind_info_t *info, int x, int y, char *str, int index, int replaced_length) {
-				// need some way to prove this is the current replace so if it is we do this and if not we don't..
-				if(strcmp(str, info->rstr) == 0) {
-								add_to_2d_array((void **) info->replace, str, index, info->replace_search_size);
-								info->replace_loc++;
-				}
+void undo_replace_with(unblind_info_t *info, int x, int y, char *str, int index, char *replaced) {
+				int replaced_length = strlen(replaced);
 				int str_len = strlen(str);
 				info->cx = x;
 				info->cy = y;
 				for(int i = 0; i < replaced_length; i++) {
 								backspace_action(info, 0);
 				}
+
+				// add items back to the list isn't possible in the current state
+				/*if(strcmp(str, info->rsstr) == 0 && strcmp(replaced, info->rstr) == 0) {
+								int *value = calloc(2, sizeof(int)); 
+								value[0] = info->cx;
+								value[1] = info->cy;
+								//add_to_2d_array((void **) info->replace, (void *) value, index, info->replace_search_size);
+				}*/
+
 				while(info->size[y] <= strlen(current_line(info)) + str_len) {
 								info->size[y] *= 2;
 				} 

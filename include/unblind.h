@@ -172,7 +172,7 @@ int draw_find_syntax_highlight(unblind_info_t *info, color_t *color, int *toggle
 int array_insert(char *a, int x, char c, int size);
 void move_to_left(char *arr, int left, int size);
 void remove_from_2d_array(void **arr, int index, int size);
-void add_to_2d_array(void **arr, char *value, int index, int size);
+void add_to_2d_array(void **arr, void *value, int index, int size);
 void reset_replace(unblind_info_t *info);
 void shift_up(unblind_info_t *info);
 void shift_down(unblind_info_t *info);

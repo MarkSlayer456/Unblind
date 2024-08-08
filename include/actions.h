@@ -54,5 +54,5 @@ void undo_move_line_up(unblind_info_t *info, int x, int y);
 
 void replace_with(unblind_info_t *info, int x, int y, int search_length, char *str, int add_to_ur_manager);
 
-void undo_replace_with(unblind_info_t *info, int x, int y, char *str, int index, int search_length);
+void undo_replace_with(unblind_info_t *info, int x, int y, char *str, int index, char *replaced);
 #endif

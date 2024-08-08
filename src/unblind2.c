@@ -518,8 +518,6 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 				find_str(info);
 			} else if(info->scan_mode == REPLACING) {
 				can_replace = replace_str(info);
-				if(can_replace > 0) can_replace = 1; 
-				else can_replace = 0;
 			}
 			break;
 		case CTRL_O:
@@ -678,7 +676,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
                         undo_move_line_up(info, node->x, node->y);
                         break;
 										case REPLACE_ACTION:
-												undo_replace_with(info, node->x, node->y, ur_node->c, ur_node->i, ur_node->j);
+												undo_replace_with(info, node->x, node->y, ur_node->c, ur_node->i, ur_node->c2);
 												break;
                     default:
                         break;
@@ -706,19 +704,24 @@ void move_to_left(char *arr, int left, int size) {
 void remove_from_2d_array(void **arr, int index, int size) {
 	for(int i = index; i < size-1; i++) {
 		if(arr[i] != NULL) {
-			memcpy(arr[i], arr[i+1], sizeof(char *));
+			memcpy(arr[i], arr[i+1], sizeof(int)*2);
 		}
 	}
 }
 
 // note: this function assumes the array is big enough already
 // to store the data it is given
-void add_to_2d_array(void **arr, char *value, int index, int size) {
-	for(int i = size-1; i > index; i--) { // size if the max size of the array (kinda slow, but it works)
-		memcpy(arr[i+1], arr[i], sizeof(int *));
+void add_to_2d_array(void **arr, void *value, int index, int size) {
+	for(int i = size-1; i > 0; i--) { // size is the max size of the array (kinda slow, but it works)
+		if(arr[i+1] != NULL && arr[i] != NULL) {
+			if(i+1 == index) {
+				memcpy(arr[index], value, sizeof(int)*2);
+				return;
+			}
+			else memcpy(arr[i+1], arr[i], sizeof(int)*2);
+		}
 	}
-	arr[index] = value;
-}
+	}
 
 void reset_replace(unblind_info_t *info) {
 	for(int i = 0; i < info->replace_search_size; i++) {
