@@ -291,7 +291,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 		if(c == ENTER_KEY) {
 			memset(info->rstr, '\0', sizeof(char) * FIND_STR_MAX_LENGTH);
 			memset(info->message, '\0', MAX_MESSAGE_LENGTH * sizeof(char));
-      unblind_move_to_message(info);
+      		unblind_move_to_message(info);
 			info->m = REPLACE;
 		} else if(c == BACKSPACE_KEY_0 || c == BACKSPACE_KEY_1 || c == BACKSPACE_KEY_2) {
 			if(strlen(info->rsstr) == 0) return;
@@ -675,10 +675,10 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
                     case MOVE_LINE_UP:
                         undo_move_line_up(info, node->x, node->y);
                         break;
-										case REPLACE_ACTION:
-												undo_replace_with(info, node->x, node->y, ur_node->c, ur_node->i, ur_node->c2);
-												break;
-                    default:
+					case REPLACE_ACTION:
+						undo_replace_with(info, node->x, node->y, ur_node->c, ur_node->i, ur_node->c2);
+						break;
+					default:
                         break;
                 }
 			}
@@ -711,17 +711,16 @@ void remove_from_2d_array(void **arr, int index, int size) {
 
 // note: this function assumes the array is big enough already
 // to store the data it is given
-void add_to_2d_array(void **arr, void *value, int index, int size) {
-	for(int i = size-1; i > 0; i--) { // size is the max size of the array (kinda slow, but it works)
-		if(arr[i+1] != NULL && arr[i] != NULL) {
-			if(i+1 == index) {
-				memcpy(arr[index], value, sizeof(int)*2);
-				return;
-			}
-			else memcpy(arr[i+1], arr[i], sizeof(int)*2);
+void insert_to_2d_array(void **arr, void *value, int index, int size) {
+	if(index < 0) return;
+	for(int i = size-2; i >= 0; i--) { 
+		memcpy(arr[i+1], arr[i], sizeof(int)*2);
+		if(i == index) {
+			memcpy(arr[i], value, sizeof(int)*2);
+			return;
 		}
 	}
-	}
+}
 
 void reset_replace(unblind_info_t *info) {
 	for(int i = 0; i < info->replace_search_size; i++) {
