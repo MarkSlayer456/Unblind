@@ -227,6 +227,7 @@ void find_str(unblind_info_t *info) {
 	}
 }
 
+
 int replace_str(unblind_info_t *info) {
 	if(!info->replace) return 0;
 	if(info->replace[0][0] == -1) {
@@ -878,8 +879,9 @@ void undo_move_line_up(unblind_info_t *info, int x, int y) {
 /**
  * Replace characters with the given characters starting at the pos
  */
-void replace_with(unblind_info_t *info, int x, int y, int search_length, char *str, int add_to_ur_manager) {
-	remove_from_2d_array((void **)info->replace, info->replace_loc, info->replace_search_size);
+void replace_with(unblind_info_t *info, int x, int y, int search_length, char *str, int replace_loc, int add_to_ur_manager) {
+	remove_from_2d_array((void **)info->replace, replace_loc, info->replace_search_size);
+	replace_loc--;
 	info->replace_loc--;
 	int replace_len = strlen(str);
 	info->cx = x + search_length;
@@ -902,12 +904,11 @@ void replace_with(unblind_info_t *info, int x, int y, int search_length, char *s
 		ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
 		node->c2 = calloc(strlen(info->rstr), sizeof(char) * REPLACE_STRING_MAX_LENGTH);
 		strcpy(node->c2, info->rstr);
-		//node->c2 = strdup(info->rstr);
-		node->i = info->replace_loc+1;
+		node->i = replace_loc+1;
 		node->c = calloc(strlen(info->rsstr), sizeof(char) * REPLACE_STRING_MAX_LENGTH); 
 		strcpy(node->c, info->rsstr);
-		//node->c = strdup(info->rsstr);
 		node->action = REPLACE_ACTION;
+
 		linked_list_d_add(info->ur_manager->stack_u, (void *) node, info->cx, info->cy);
 	}
 }
@@ -937,8 +938,18 @@ void undo_replace_with(unblind_info_t *info, int x, int y, char *str, int index,
 	for(int i = 0; i < strlen(str); i++) {
 		type_char(str[i], info, 0);
 	}
-	info->replace_loc--;
+	info->replace_loc++;
 	unblind_scroll_hor_calc(info);
 	unblind_scroll_vert_calc(info);
+	// redo information
+	ur_node_t *node = (ur_node_t *)malloc(sizeof(ur_node_t));
+	node->c2 = calloc(strlen(info->rstr), sizeof(char) * REPLACE_STRING_MAX_LENGTH);
+	strcpy(node->c2, info->rstr);
+	node->c = calloc(strlen(info->rsstr), sizeof(char) * REPLACE_STRING_MAX_LENGTH); 
+	strcpy(node->c, info->rsstr);
+	node->i = info->replace_loc-1;
+	node->action = REPLACE_ACTION;
+
+	linked_list_d_add(info->ur_manager->stack_r, node, info->cx - (strlen(info->rsstr)), info->cy);
 	linked_list_d_pop(info->ur_manager->stack_u);
 }

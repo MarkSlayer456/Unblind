@@ -522,7 +522,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 			break;
 		case CTRL_O:
 			if(info->scan_mode == REPLACING && info->can_replace) {
-				replace_with(info, info->cx, info->cy, strlen(info->rsstr),info->rstr, 1);
+				replace_with(info, info->cx, info->cy, strlen(info->rsstr), info->rstr, info->replace_loc, 1);
 				modified = 1;
 			}
 			break;
@@ -575,7 +575,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 						info->cx = node->x;
 						info->cy = node->y;
 						unblind_scroll_hor_calc(info);
-    						unblind_scroll_vert_calc(info);
+    					unblind_scroll_vert_calc(info);
 						type_char(*ur_node->c, info, 1);
 						modified = 1;
 						break;
@@ -583,7 +583,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 						info->cx = node->x;
 						info->cy = node->y;
 						unblind_scroll_hor_calc(info);
-    						unblind_scroll_vert_calc(info);
+    					unblind_scroll_vert_calc(info);
 						tab_action(info, 1);
 						modified = 1;
 						break;
@@ -592,7 +592,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 						info->cx = node->x;
 						info->cy = node->y;
 						unblind_scroll_hor_calc(info);
-    						unblind_scroll_vert_calc(info);
+    					unblind_scroll_vert_calc(info);
 						backspace_action(info, 1); 
 						modified = 1;
 						break;
@@ -601,7 +601,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 						info->cx = node->x;
 						info->cy = node->y;
 						unblind_scroll_hor_calc(info);
-    						unblind_scroll_vert_calc(info);
+    					unblind_scroll_vert_calc(info);
 						enter_key_action(info, 1);
 						modified = 1;
 						break;
@@ -625,7 +625,7 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 						info->cx = node->x;
 						info->cy = node->y;
 						unblind_scroll_hor_calc(info);
-    						unblind_scroll_vert_calc(info);
+    					unblind_scroll_vert_calc(info);
 						move_line_up(info, 1);
 						modified = 1;
 						break;
@@ -633,11 +633,17 @@ void manage_input(char *file_name, unblind_info_t *info, char c, th_info_t *th) 
 						info->cx = node->x;
 						info->cy = node->y;
 						unblind_scroll_hor_calc(info);
-    						unblind_scroll_vert_calc(info);
+    					unblind_scroll_vert_calc(info);
 						move_line_down(info, 1);
 						modified = 1;
 						break;
 					case REPLACE_ACTION:
+						info->cx = node->x;
+						info->cy = node->y;
+						unblind_scroll_hor_calc(info);
+    					unblind_scroll_vert_calc(info);
+						replace_with(info, node->x, node->y, strlen(ur_node->c), ur_node->c2, ur_node->i ,1);
+						modified = 1;
 						break;
 				}
 				linked_list_d_pop(info->ur_manager->stack_r);

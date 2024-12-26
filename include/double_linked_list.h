@@ -18,7 +18,7 @@ typedef enum {
 
 typedef struct ur_node {
     char *c, *c2;
-		int i, j;
+	int i, j;
     action_t action;
 } ur_node_t;
 
