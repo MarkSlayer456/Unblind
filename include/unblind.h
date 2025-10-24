@@ -185,8 +185,8 @@ void set_active_window(th_info_t *th, int value);
 void draw_all_screens(th_info_t *th);
 
 //main.c
-void inputThread();
-void drawThread();
+void inputThread(void *args);
+void drawThread(void *args);
 int create_win(th_info_t *th);
 int close_active_win(th_info_t *th);
 
