@@ -55,6 +55,14 @@
 #define MAX_JUMP_STR_LENGTH           300
 #define DEFAULT_MAX_CHARS_PER_LINE	  256
 #define DEFAULT_MAX_LINES			  4096
+#define DEBUG_LOG(fmt, ...) \
+do { \
+	FILE *f = fopen("debug.log", "a"); \
+	if (f) { \
+		fprintf(f, fmt "\n", ##__VA_ARGS__); \
+		fclose(f); \
+	} \
+} while (0)
 
 typedef enum {
 	NONE = 1,
