@@ -176,7 +176,7 @@ language_t get_file_type(unblind_info_t *info);
 color_t get_color(char *color);
 int enable_color(unblind_info_t *info, color_t color);
 int disable_color(unblind_info_t *info, color_t color);
-int draw_find_syntax_highlight(unblind_info_t *info, color_t *color, int *toggleColor, int i, int j);
+int draw_find_syntax_highlight(unblind_info_t *info, color_t *color, int *toggleColor, int i, long long int j);
 int array_insert(char *a, int x, char c, int size);
 void move_to_left(char *arr, int left, int size);
 void remove_from_2d_array(void **arr, int index, int size);

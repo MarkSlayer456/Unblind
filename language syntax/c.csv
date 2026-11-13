@@ -16,8 +16,8 @@ break,red
 case,red
 #define,green
 #include,green
-",magenta
 ',magenta
+",magenta
 if,magenta
 else,magenta
 switch,magenta

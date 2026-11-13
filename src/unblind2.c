@@ -66,7 +66,7 @@ int disable_color(unblind_info_t *info, color_t color)
 	}
 }
 
-int draw_find_syntax_highlight(unblind_info_t *info, color_t *color, int *toggleColor, int i, int j)
+int draw_find_syntax_highlight(unblind_info_t *info, color_t *color, int *toggleColor, int i, long long int j)
 {
 	if(*toggleColor == 0) {
 		for(int k = 0; k < info->p_data->wordCount; k++) {
@@ -81,6 +81,15 @@ int draw_find_syntax_highlight(unblind_info_t *info, color_t *color, int *toggle
 					free(tmp);
 					continue;
 					}
+			} else if(info->contents[i][j] == '"') {
+				for(int u = j; u < strlen(info->contents[i]); u++) {
+					*color = MAGENTA;
+					(*toggleColor)++;
+					if(u != j && info->contents[i][u] == '"') {
+						break;
+					}
+				}
+				break;
 			}
 			int infront = j+len;
 			if(infront <= strlen(info->contents[i]) && (info->contents[i][j] != '"')) {
@@ -97,11 +106,16 @@ int draw_find_syntax_highlight(unblind_info_t *info, color_t *color, int *toggle
 					continue;
 					}
 			}
-			strncpy(tmp, info->contents[i]+j, len);
-			if(strncmp(tmp, info->p_data->words[k], len) == 0) {
-				*color = info->p_data->colors[k];
-				*toggleColor = len;
-				break; // match found no need to scan for others
+			if(info->contents[i][j] != '"') {
+				strncpy(tmp, info->contents[i]+j, len);
+				if(strncmp(tmp, info->p_data->words[k], len) == 0) {
+					*color = info->p_data->colors[k];
+					*toggleColor = len;
+					break; // match found no need to scan for others
+				}
+			} else {
+				free(tmp);
+				break;
 			}
 			free(tmp);
 		}
